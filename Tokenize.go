@@ -3,7 +3,7 @@ package Tokenize
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -45,7 +45,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	checkoutParams := &stripe.CheckoutSessionParams{
-		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)), //imporante
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				Price:    stripe.String(price.ID),
@@ -100,7 +100,7 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	const MaxBodyBytes = int64(65536)
 	bodyReader := http.MaxBytesReader(w, req.Body, MaxBodyBytes)
-	payload, err := ioutil.ReadAll(bodyReader)
+	payload, err := io.ReadAll(bodyReader)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading request body: %v\n", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -110,7 +110,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	// If you are testing with the CLI, find the secret by running 'stripe listen'
 	// If you are using an endpoint defined with the API or dashboard, look in your webhook settings
 	// at https://dashboard.stripe.com/webhooks
-	endpointSecret := "whsec_12345"
+	endpointSecret := "whsec_54538f8474265bf34fd182bc0fcaeb56ce7d5085809cd2fb86cb54ffce60e760"
 	signatureHeader := req.Header.Get("Stripe-Signature")
 	event, err := webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
 	if err != nil {
@@ -186,8 +186,8 @@ func Init() {
 	stripe.Key = os.Getenv("SECRET_KEY")
 
 	http.Handle("/", http.FileServer(http.Dir("public")))
-	http.HandleFunc("/create-checkout-session", createCheckoutSession)
-	http.HandleFunc("/create-portal-session", createPortalSession)
+	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
+	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
 	addr := "localhost:4242"
 	log.Printf("Listening on %s", addr)
