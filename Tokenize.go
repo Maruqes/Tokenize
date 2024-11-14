@@ -30,6 +30,16 @@ import (
 //uma subricicao
 //dar duracao a subscricao
 
+var domain = os.Getenv("DOMAIN")
+
+type User struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+var userMap = make(map[string]User)
+
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -37,8 +47,6 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.ParseForm()
-
-	domain := "http://localhost:4242"
 
 	price := &stripe.Price{
 		ID: os.Getenv("SUBSCRIPTION_PRICE_ID"),
@@ -65,7 +73,6 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
-	domain := "http://localhost:4242"
 	// For demonstration purposes, we're using the Checkout session to retrieve the customer ID.
 	// Typically this is stored alongside the authenticated user in your database.
 	r.ParseForm()
@@ -111,6 +118,11 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	// If you are using an endpoint defined with the API or dashboard, look in your webhook settings
 	// at https://dashboard.stripe.com/webhooks
 	endpointSecret := os.Getenv("ENDPOINT_SECRET")
+	if endpointSecret == "" {
+		fmt.Fprintf(os.Stderr, "Error reading endpoint secret: %v\n", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
 	signatureHeader := req.Header.Get("Stripe-Signature")
 	event, err := webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
 	if err != nil {
@@ -174,10 +186,40 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		}
 		log.Printf("Active entitlement summary updated for %s.", subscription.ID) // Then define and call a func to handle active entitlement summary updated.
 		// handleEntitlementUpdated(subscription)
+	case "customer.created":
+		var our_customer stripe.Customer
+		err := json.Unmarshal(event.Data.Raw, &our_customer)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		userMap[our_customer.Name] = User{ID: our_customer.ID, Email: our_customer.Email, Name: our_customer.Name}
+
+		log.Printf("Customer created for %s with email %s  ID:%s.", our_customer.Name, our_customer.Email, our_customer.ID)
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func createMyPortalSession(w http.ResponseWriter, r *http.Request) {
+	//the user should be logged in
+
+	username := r.URL.Query().Get("username")
+	//get user from map
+	user := userMap[username]
+
+	// Authenticate your user.
+	params := &stripe.BillingPortalSessionParams{
+		Customer:  stripe.String(user.ID),
+		ReturnURL: stripe.String(domain),
+	}
+	ps, _ := portalsession.New(params)
+	log.Printf("ps.New: %v", ps.URL)
+
+	http.Redirect(w, r, ps.URL, http.StatusSeeOther)
 }
 
 func Init() {
@@ -189,6 +231,10 @@ func Init() {
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
+
+	//testing
+	http.HandleFunc("/create_my_portal_session", createMyPortalSession)
+
 	addr := "localhost:4242"
 	log.Printf("Listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
