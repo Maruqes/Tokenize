@@ -141,6 +141,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Subscription deleted for %s.", subscription.ID)
+		handleSubscriptionCanceled(subscription)
 		// Then define and call a func to handle the deleted subscription.
 		// handleSubscriptionCanceled(subscription)
 	case "customer.subscription.updated":
@@ -152,6 +153,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Subscription updated for %s.", subscription.ID)
+		handle_cancel_update(subscription)
 		// Then define and call a func to handle the successful attachment of a PaymentMethod.
 		// handleSubscriptionUpdated(subscription)
 	case "customer.subscription.created":
@@ -198,6 +200,17 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		userMap[our_customer.Name] = User{ID: our_customer.ID, Email: our_customer.Email, Name: our_customer.Name}
 
 		log.Printf("Customer created for %s with email %s  ID:%s.", our_customer.Name, our_customer.Email, our_customer.ID)
+	case "invoice.payment_succeeded":
+		var invoice stripe.Invoice
+		err := json.Unmarshal(event.Data.Raw, &invoice)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		log.Printf("Invoice payment succeeded for %s.", invoice.ID)
+		handle_payment_success(invoice)
+		// Then define and call a func to handle the successful payment of an invoice.
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 	}
