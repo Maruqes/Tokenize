@@ -12,6 +12,7 @@ import (
 	"github.com/stripe/stripe-go/v81"
 	portalsession "github.com/stripe/stripe-go/v81/billingportal/session"
 	"github.com/stripe/stripe-go/v81/checkout/session"
+	"github.com/stripe/stripe-go/v81/customer"
 	"github.com/stripe/stripe-go/v81/webhook"
 )
 
@@ -31,14 +32,17 @@ import (
 //dar duracao a subscricao
 
 var domain = os.Getenv("DOMAIN")
+var db = DB{}
 
-type User struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
+func getCustomer(id string) (*stripe.Customer, error) {
+	customer, err := customer.Get(id, nil)
+	if err != nil {
+		log.Printf("Error getting customer: %v", err)
+		return nil, err
+	}
+
+	return customer, nil
 }
-
-var userMap = make(map[string]User)
 
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -48,15 +52,29 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 
-	price := &stripe.Price{
-		ID: os.Getenv("SUBSCRIPTION_PRICE_ID"),
+	//get the customer id from the form
+	customer_id := r.PostFormValue("id")
+
+	// Criar ou atualizar cliente
+	customerParams := &stripe.CustomerParams{
+		Metadata: map[string]string{
+			"tokenize_id": customer_id,
+		},
+	}
+	customer, err := customer.New(customerParams)
+	if err != nil {
+		log.Printf("customer.New: %v", err)
+		http.Error(w, "Failed to create customer", http.StatusInternalServerError)
+		return
 	}
 
+	// Configurar sessão de checkout com o cliente criado
 	checkoutParams := &stripe.CheckoutSessionParams{
-		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)), //imporante
+		Customer: stripe.String(customer.ID), // Vincular o cliente criado
+		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String(price.ID),
+				Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")),
 				Quantity: stripe.Int64(1),
 			},
 		},
@@ -67,6 +85,8 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	s, err := session.New(checkoutParams)
 	if err != nil {
 		log.Printf("session.New: %v", err)
+		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
+		return
 	}
 
 	http.Redirect(w, r, s.URL, http.StatusSeeOther)
@@ -141,9 +161,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Subscription deleted for %s.", subscription.ID)
-		handleSubscriptionCanceled(subscription)
-		// Then define and call a func to handle the deleted subscription.
-		// handleSubscriptionCanceled(subscription)
+		handleSubscriptionDeleted(subscription)
 	case "customer.subscription.updated":
 		var subscription stripe.Subscription
 		err := json.Unmarshal(event.Data.Raw, &subscription)
@@ -154,8 +172,6 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		}
 		log.Printf("Subscription updated for %s.", subscription.ID)
 		handle_cancel_update(subscription)
-		// Then define and call a func to handle the successful attachment of a PaymentMethod.
-		// handleSubscriptionUpdated(subscription)
 	case "customer.subscription.created":
 		var subscription stripe.Subscription
 		err := json.Unmarshal(event.Data.Raw, &subscription)
@@ -197,8 +213,6 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		userMap[our_customer.Name] = User{ID: our_customer.ID, Email: our_customer.Email, Name: our_customer.Name}
-
 		log.Printf("Customer created for %s with email %s  ID:%s.", our_customer.Name, our_customer.Email, our_customer.ID)
 	case "invoice.payment_succeeded":
 		var invoice stripe.Invoice
@@ -209,7 +223,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Invoice payment succeeded for %s.", invoice.ID)
-		handle_payment_success(invoice)
+		handlePaymentSuccess(invoice)
 		// Then define and call a func to handle the successful payment of an invoice.
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
@@ -218,25 +232,42 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 }
 
 func createMyPortalSession(w http.ResponseWriter, r *http.Request) {
-	//the user should be logged in
 
-	username := r.URL.Query().Get("username")
-	//get user from map
-	user := userMap[username]
+}
 
-	// Authenticate your user.
-	params := &stripe.BillingPortalSessionParams{
-		Customer:  stripe.String(user.ID),
-		ReturnURL: stripe.String(domain),
+func createUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
 	}
-	ps, _ := portalsession.New(params)
-	log.Printf("ps.New: %v", ps.URL)
+	var credentials struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
 
-	http.Redirect(w, r, ps.URL, http.StatusSeeOther)
+	err := json.NewDecoder(r.Body).Decode(&credentials)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Password)
+
+	id, err := db.AddUser("", "", credentials.Username, credentials.Password)
+	if err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf(`{"id": %d}`, id)))
 }
 
 func Init() {
 	fmt.Println("Init")
+
+	db.Init()
+	db.createTable()
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
@@ -247,6 +278,9 @@ func Init() {
 
 	//testing
 	http.HandleFunc("/create_my_portal_session", createMyPortalSession)
+
+	//db
+	http.HandleFunc("/create-user", createUser)
 
 	addr := "localhost:4242"
 	log.Printf("Listening on %s", addr)
