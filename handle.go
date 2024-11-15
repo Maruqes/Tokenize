@@ -1,6 +1,7 @@
 package Tokenize
 
 import (
+	"Tokenize/database"
 	"fmt"
 	"log"
 	"strconv"
@@ -37,5 +38,5 @@ func handlePaymentSuccess(invoice stripe.Invoice) {
 		log.Printf("Error converting tokenize_id to int: %v", err)
 		return
 	}
-	db.SetUserStripeID(tokenizeID, invoice.Customer.ID)
+	database.SetUserStripeID(tokenizeID, invoice.Customer.ID)
 }

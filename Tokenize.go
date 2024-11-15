@@ -1,6 +1,7 @@
 package Tokenize
 
 import (
+	"Tokenize/database"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,7 +33,6 @@ import (
 //dar duracao a subscricao
 
 var domain = os.Getenv("DOMAIN")
-var db = DB{}
 
 func getCustomer(id string) (*stripe.Customer, error) {
 	customer, err := customer.Get(id, nil)
@@ -253,7 +253,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Password)
 
-	id, err := db.AddUser("", "", credentials.Username, credentials.Password)
+	id, err := database.AddUser("", "", credentials.Username, credentials.Password)
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
@@ -266,8 +266,8 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func Init() {
 	fmt.Println("Init")
 
-	db.Init()
-	db.createTable()
+	database.Init()
+	database.CreateTable()
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
