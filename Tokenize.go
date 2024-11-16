@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
@@ -54,11 +55,28 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 
 	//get the customer id from the form
 	customer_id := r.PostFormValue("id")
+	customerIDInt, err := strconv.Atoi(customer_id)
+	if customer_id == "" || err != nil || !database.CheckIfUserIDExists(customerIDInt) {
+		http.Error(w, "Invalid request payload with id user", http.StatusBadRequest)
+		return
+	}
+
+	usr, err := database.GetUser(customerIDInt)
+	if err != nil {
+		http.Error(w, "Failed to get user", http.StatusInternalServerError)
+		return
+	}
+	if usr.StripeID != "" {
+		http.Error(w, "User already has a subscription", http.StatusBadRequest)
+		return
+	}
 
 	// Criar ou atualizar cliente
 	customerParams := &stripe.CustomerParams{
+		Email: stripe.String(usr.Email),
 		Metadata: map[string]string{
 			"tokenize_id": customer_id,
+			"username":    usr.Name,
 		},
 	}
 	customer, err := customer.New(customerParams)
@@ -70,7 +88,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 
 	// Configurar sessão de checkout com o cliente criado
 	checkoutParams := &stripe.CheckoutSessionParams{
-		Customer: stripe.String(customer.ID), // Vincular o cliente criado
+		Customer: stripe.String(customer.ID),
 		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
@@ -243,6 +261,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&credentials)
@@ -253,9 +272,14 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Password)
 
-	id, err := database.AddUser("", "", credentials.Username, credentials.Password)
+	if credentials.Username == "" || credentials.Password == "" || credentials.Email == "" {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	id, err := database.AddUser("", credentials.Email, credentials.Username, credentials.Password)
 	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		http.Error(w, "Failed to create user check the credentials", http.StatusInternalServerError)
 		return
 	}
 

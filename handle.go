@@ -17,6 +17,7 @@ func handle_cancel_update(subscription stripe.Subscription) {
 
 func handleSubscriptionDeleted(subscription stripe.Subscription) {
 	fmt.Printf("Subscription deleted for %s.", subscription.ID)
+	database.DeactivateUserByStripeID(subscription.Customer.ID)
 }
 
 func handlePaymentSuccess(invoice stripe.Invoice) {
@@ -39,4 +40,5 @@ func handlePaymentSuccess(invoice stripe.Invoice) {
 		return
 	}
 	database.SetUserStripeID(tokenizeID, invoice.Customer.ID)
+	database.ActivateUser(tokenizeID)
 }

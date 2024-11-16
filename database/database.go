@@ -1,25 +1,34 @@
 package database
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
+	"fmt"
 	"log"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
+
+type User struct {
+	ID       int
+	StripeID string
+	Email    string
+	Name     string
+	IsActive bool
+}
 
 func CreateTable() {
 	query := `
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        stripe_id TEXT,
-        email TEXT,
-        name TEXT,
-        password TEXT
+        stripe_id TEXT UNIQUE,
+        email TEXT UNIQUE,
+        name TEXT NOT NULL UNIQUE, 
+        password TEXT,
+		is_active BOOLEAN DEFAULT 0
     );
     `
 	_, err := db.Exec(query)
@@ -47,8 +56,27 @@ func Init() {
 	CreateTable()
 }
 
+func CheckIfCanUserBeAdded(email, name string) bool {
+	row := db.QueryRow(`
+		SELECT id
+		FROM users
+		WHERE email = ? OR name = ?
+	`, email, name)
+	var result int
+	err := row.Scan(&result)
+	return err != nil
+}
+
 func AddUser(stripeID, email, name, password string) (int64, error) {
-	hashedPassword := hashPassword(password)
+	if !CheckIfCanUserBeAdded(email, name) {
+		return 0, fmt.Errorf("user email or username already exists")
+	}
+
+	hashedPassword, err := hashPassword(password)
+	if err != nil {
+		return 0, err
+	}
+
 	result, err := db.Exec(`
 		INSERT INTO users (stripe_id, email, name, password)
 		VALUES (?, ?, ?, ?)
@@ -70,10 +98,63 @@ func SetUserStripeID(id int, stripeID string) error {
 		WHERE id = ?
 	`, stripeID, id)
 	return err
-
 }
 
-func hashPassword(password string) string {
-	hash := sha256.Sum256([]byte(password))
-	return hex.EncodeToString(hash[:])
+func CheckIfUserIDExists(id int) bool {
+	row := db.QueryRow(`
+		SELECT id
+		FROM users
+		WHERE id = ?
+	`, id)
+	var result int
+	err := row.Scan(&result)
+	return err == nil
+}
+
+func GetUser(id int) (User, error) {
+	row := db.QueryRow(`
+		SELECT id, stripe_id, email, name, is_active
+		FROM users
+		WHERE id = ?
+	`, id)
+	var user User
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
+	return user, err
+}
+
+func ActivateUser(id int) error {
+	_, err := db.Exec(`
+		UPDATE users
+		SET is_active = 1
+		WHERE id = ?
+	`, id)
+	return err
+}
+
+func DeactivateUser(id int) error {
+	_, err := db.Exec(`
+		UPDATE users
+		SET is_active = 0, stripe_id = ""
+		WHERE id = ?
+	`, id)
+	return err
+}
+
+func DeactivateUserByStripeID(stripeID string) error {
+	_, err := db.Exec(`
+		UPDATE users
+		SET is_active = 0, stripe_id = ""
+		WHERE stripe_id = ?
+	`, stripeID)
+	return err
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func VerifyPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
