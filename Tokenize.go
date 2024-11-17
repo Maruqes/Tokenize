@@ -66,7 +66,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get user", http.StatusInternalServerError)
 		return
 	}
-	if usr.StripeID != "" {
+	if usr.IsActive {
 		http.Error(w, "User already has a subscription", http.StatusBadRequest)
 		return
 	}
@@ -79,16 +79,26 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 			"username":    usr.Name,
 		},
 	}
-	customer, err := customer.New(customerParams)
+
+	var finalCustomer *stripe.Customer
+
+	customer_exists, err := customer.Get(usr.StripeID, nil)
 	if err != nil {
-		log.Printf("customer.New: %v", err)
-		http.Error(w, "Failed to create customer", http.StatusInternalServerError)
-		return
+		log.Printf("customer.Get problem assuming it does not exists")
+
+		finalCustomer, err = customer.New(customerParams)
+		if err != nil {
+			log.Printf("customer.New: %v", err)
+			http.Error(w, "Failed to create customer", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		finalCustomer = customer_exists
 	}
 
 	// Configurar sessão de checkout com o cliente criado
 	checkoutParams := &stripe.CheckoutSessionParams{
-		Customer: stripe.String(customer.ID),
+		Customer: stripe.String(finalCustomer.ID),
 		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{

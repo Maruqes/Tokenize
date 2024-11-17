@@ -134,7 +134,7 @@ func ActivateUser(id int) error {
 func DeactivateUser(id int) error {
 	_, err := db.Exec(`
 		UPDATE users
-		SET is_active = 0, stripe_id = ""
+		SET is_active = 0
 		WHERE id = ?
 	`, id)
 	return err
@@ -143,7 +143,7 @@ func DeactivateUser(id int) error {
 func DeactivateUserByStripeID(stripeID string) error {
 	_, err := db.Exec(`
 		UPDATE users
-		SET is_active = 0, stripe_id = ""
+		SET is_active = 0
 		WHERE stripe_id = ?
 	`, stripeID)
 	return err
