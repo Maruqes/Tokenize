@@ -4,6 +4,7 @@ import (
 	"Tokenize/database"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -20,7 +21,23 @@ func handleSubscriptionDeleted(subscription stripe.Subscription) {
 	database.DeactivateUserByStripeID(subscription.Customer.ID)
 }
 
-func handlePaymentSuccess(invoice stripe.Invoice) {
+func handlePaymentSuccess(invoice stripe.Invoice) error {
+
+	subscriptionID := ""
+	for _, line := range invoice.Lines.Data {
+		if line.Price.ID == os.Getenv("SUBSCRIPTION_PRICE_ID") {
+			subscriptionID = line.Price.ID
+			break
+		}
+	}
+	fmt.Printf("Subscription ID: %s\n", subscriptionID)
+
+	if subscriptionID == "" {
+		log.Printf("No subscription found for invoice %s", invoice.ID)
+		_, err := fmt.Fprintf(os.Stderr, "No subscription found for invoice %s", invoice.ID)
+		return err
+	}
+
 	fmt.Printf("Payment succeeded for customer %s\n", invoice.Customer.ID)
 	fmt.Printf("Amount: %d\n", invoice.AmountPaid)
 	fmt.Printf("Product: %s\n", invoice.Lines.Data[0].Price.Product.ID)
@@ -29,7 +46,7 @@ func handlePaymentSuccess(invoice stripe.Invoice) {
 	customer, err := getCustomer(invoice.Customer.ID)
 	if err != nil {
 		log.Printf("Error getting customer: %v", err)
-		return
+		return err
 	}
 
 	fmt.Printf("Metadata: %v\n", customer.Metadata["tokenize_id"])
@@ -37,8 +54,17 @@ func handlePaymentSuccess(invoice stripe.Invoice) {
 	tokenizeID, err := strconv.Atoi(customer.Metadata["tokenize_id"])
 	if err != nil {
 		log.Printf("Error converting tokenize_id to int: %v", err)
-		return
+		return err
 	}
-	database.SetUserStripeID(tokenizeID, invoice.Customer.ID)
-	database.ActivateUser(tokenizeID)
+
+	if err := database.SetUserStripeID(tokenizeID, invoice.Customer.ID); err != nil {
+		log.Printf("Error setting user Stripe ID: %v", err)
+		return err
+	}
+
+	if err := database.ActivateUser(tokenizeID); err != nil {
+		log.Printf("Error activating user: %v", err)
+		return err
+	}
+	return nil
 }

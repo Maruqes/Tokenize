@@ -56,19 +56,28 @@ func Init() {
 	CreateTable()
 }
 
-func CheckIfCanUserBeAdded(email, name string) bool {
+func CheckIfCanUserBeAdded(email, name string) (bool, error) {
 	row := db.QueryRow(`
-		SELECT id
-		FROM users
-		WHERE email = ? OR name = ?
-	`, email, name)
+        SELECT id
+        FROM users
+        WHERE email = ? OR name = ?
+    `, email, name)
 	var result int
 	err := row.Scan(&result)
-	return err != nil
+	if err == sql.ErrNoRows {
+		return true, nil // User is unique
+	} else if err != nil {
+		return false, err // An error occurred
+	}
+	return false, nil // User exists
 }
 
 func AddUser(stripeID, email, name, password string) (int64, error) {
-	if !CheckIfCanUserBeAdded(email, name) {
+	canBeAdded, err := CheckIfCanUserBeAdded(email, name)
+	if err != nil {
+		return 0, err
+	}
+	if !canBeAdded {
 		return 0, fmt.Errorf("user email or username already exists")
 	}
 

@@ -45,6 +45,85 @@ func getCustomer(id string) (*stripe.Customer, error) {
 	return customer, nil
 }
 
+func checkIfEmailIsBeingUsedInStripe(email string) bool {
+	params := &stripe.CustomerListParams{
+		Email: stripe.String(email),
+	}
+	i := customer.List(params)
+	for i.Next() {
+		if i.Customer().Email == email {
+			return true
+		}
+	}
+	return false
+}
+
+func checkIfIDBeingUsedInStripe(id string) bool {
+	params := &stripe.CustomerListParams{}
+	i := customer.List(params)
+	for i.Next() {
+		if i.Customer().Metadata["tokenize_id"] == id {
+			return true
+		}
+	}
+	return false
+}
+
+// if custumer already exists in stripe it does not create a new one and uses the existing one
+func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Customer, error) {
+	// Criar ou atualizar cliente
+	finalCustomer := &stripe.Customer{}
+	customerParams := &stripe.CustomerParams{
+		Email: stripe.String(usr.Email),
+		Metadata: map[string]string{
+			"tokenize_id": customer_id,
+			"username":    usr.Name,
+		},
+	}
+
+	customer_exists, err := customer.Get(usr.StripeID, nil)
+	if err != nil {
+		log.Printf("customer.Get problem assuming it does not exists")
+
+		if checkIfEmailIsBeingUsedInStripe(usr.Email) {
+			log.Printf("email already in use")
+			return nil, fmt.Errorf("email already in use")
+		}
+
+		if checkIfIDBeingUsedInStripe(customer_id) {
+			log.Printf("id already in use")
+			return nil, fmt.Errorf("id already in use BIG PROBLEM")
+		}
+
+		finalCustomer, err = customer.New(customerParams)
+		if err != nil {
+			log.Printf("customer.New: %v", err)
+			return nil, err
+		}
+	} else {
+		finalCustomer = customer_exists
+	}
+
+	return finalCustomer, nil
+}
+
+func validateUserInfo(customer_id string) (database.User, error) {
+	customerIDInt, err := strconv.Atoi(customer_id)
+	if customer_id == "" || err != nil || !database.CheckIfUserIDExists(customerIDInt) {
+		return database.User{}, fmt.Errorf("invalid user id")
+	}
+
+	usr, err := database.GetUser(customerIDInt)
+	if err != nil {
+		return database.User{}, fmt.Errorf("error getting user")
+	}
+	if usr.IsActive {
+		return database.User{}, fmt.Errorf("user is already active")
+	}
+
+	return usr, nil
+}
+
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -55,45 +134,16 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 
 	//get the customer id from the form
 	customer_id := r.PostFormValue("id")
-	customerIDInt, err := strconv.Atoi(customer_id)
-	if customer_id == "" || err != nil || !database.CheckIfUserIDExists(customerIDInt) {
-		http.Error(w, "Invalid request payload with id user", http.StatusBadRequest)
-		return
-	}
-
-	usr, err := database.GetUser(customerIDInt)
+	usr, err := validateUserInfo(customer_id)
 	if err != nil {
-		http.Error(w, "Failed to get user", http.StatusInternalServerError)
-		return
-	}
-	if usr.IsActive {
-		http.Error(w, "User already has a subscription", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Criar ou atualizar cliente
-	customerParams := &stripe.CustomerParams{
-		Email: stripe.String(usr.Email),
-		Metadata: map[string]string{
-			"tokenize_id": customer_id,
-			"username":    usr.Name,
-		},
-	}
-
-	var finalCustomer *stripe.Customer
-
-	customer_exists, err := customer.Get(usr.StripeID, nil)
+	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
 	if err != nil {
-		log.Printf("customer.Get problem assuming it does not exists")
-
-		finalCustomer, err = customer.New(customerParams)
-		if err != nil {
-			log.Printf("customer.New: %v", err)
-			http.Error(w, "Failed to create customer", http.StatusInternalServerError)
-			return
-		}
-	} else {
-		finalCustomer = customer_exists
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// Configurar sessão de checkout com o cliente criado
@@ -251,7 +301,12 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Invoice payment succeeded for %s.", invoice.ID)
-		handlePaymentSuccess(invoice)
+		err = handlePaymentSuccess(invoice)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		// Then define and call a func to handle the successful payment of an invoice.
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
@@ -284,6 +339,11 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	if credentials.Username == "" || credentials.Password == "" || credentials.Email == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if checkIfEmailIsBeingUsedInStripe(credentials.Email) {
+		http.Error(w, "Email already in use", http.StatusBadRequest)
 		return
 	}
 
