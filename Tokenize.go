@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
@@ -107,7 +108,7 @@ func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 	return finalCustomer, nil
 }
 
-func validateUserInfo(customer_id string) (database.User, error) {
+func validateUserInfoToActivate(customer_id string) (database.User, error) {
 	customerIDInt, err := strconv.Atoi(customer_id)
 	if customer_id == "" || err != nil || !database.CheckIfUserIDExists(customerIDInt) {
 		return database.User{}, fmt.Errorf("invalid user id")
@@ -125,21 +126,34 @@ func validateUserInfo(customer_id string) (database.User, error) {
 }
 
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
 
-	r.ParseForm()
+	login := CheckToken(r)
+	if !login {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
 
-	//get the customer id from the form
-	customer_id := r.PostFormValue("id")
-	usr, err := validateUserInfo(customer_id)
+	//get id
+	customer_id_cookie, err := r.Cookie("id")
+	if err != nil {
+		http.Error(w, "Error getting id", http.StatusInternalServerError)
+		return
+	}
+	customer_id := customer_id_cookie.Value
+
+	//validate user
+	usr, err := validateUserInfoToActivate(customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	//creates or gets the customer
 	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -173,32 +187,28 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	// For demonstration purposes, we're using the Checkout session to retrieve the customer ID.
 	// Typically this is stored alongside the authenticated user in your database.
-	r.ParseForm()
-	sessionId := r.PostFormValue("session_id")
 
-	fmt.Print(sessionId)
-	s, err := session.Get(sessionId, nil)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("session.Get: %v", err)
+	login := CheckToken(r)
+	if !login {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
 	}
 
+	//get id
+	customer_id_cookie, err := r.Cookie("id")
+	if err != nil {
+		http.Error(w, "Error getting id", http.StatusInternalServerError)
+		return
+	}
+	customer_id := customer_id_cookie.Value
+
 	// Authenticate your user.
 	params := &stripe.BillingPortalSessionParams{
-		Customer:  stripe.String(s.Customer.ID),
+		Customer:  stripe.String(customer_id),
 		ReturnURL: stripe.String(domain),
 	}
 	ps, _ := portalsession.New(params)
 	log.Printf("ps.New: %v", ps.URL)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("ps.New: %v", err)
-		return
-	}
-
 	http.Redirect(w, r, ps.URL, http.StatusSeeOther)
 }
 
@@ -314,10 +324,6 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func createMyPortalSession(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func createUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -342,10 +348,13 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//nao pode criar uma conta cujo email ja esta na stripe
 	if checkIfEmailIsBeingUsedInStripe(credentials.Email) {
 		http.Error(w, "Email already in use", http.StatusBadRequest)
 		return
 	}
+
+	//enviar email de confirmacao
 
 	id, err := database.AddUser("", credentials.Email, credentials.Username, credentials.Password)
 	if err != nil {
@@ -355,6 +364,122 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(`{"id": %d}`, id)))
+}
+
+func loginUsr(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	var credentials struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&credentials)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received credentials: %s / %s", credentials.Email, credentials.Password)
+
+	if credentials.Email == "" || credentials.Password == "" {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	token, usr, err := LoginUser(credentials.Email, credentials.Password)
+	if err != nil || token == "" {
+		http.Error(w, "Failed to login", http.StatusInternalServerError)
+		return
+	}
+
+	// Set cookies with expiration in 5 days
+	http.SetCookie(w, &http.Cookie{
+		Name:     "id",
+		Value:    strconv.Itoa(usr.ID),
+		Secure:   true,
+		HttpOnly: true,
+		Expires:  time.Now().Add(5 * 24 * time.Hour),
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Secure:   true,
+		HttpOnly: true,
+		Expires:  time.Now().Add(5 * 24 * time.Hour),
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func testLogin(w http.ResponseWriter, r *http.Request) {
+	login_Q := CheckToken(r)
+	if !login_Q {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	id, err := r.Cookie("id")
+	if err != nil {
+		http.Error(w, "Error getting id", http.StatusInternalServerError)
+		return
+	}
+
+	idInt, err := strconv.Atoi(id.Value)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	usr, err := database.GetUser(idInt)
+	if err != nil {
+		http.Error(w, "Error getting user", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Logged in as " + usr.Name))
+}
+
+func logoutUsr(w http.ResponseWriter, r *http.Request) {
+	login_Q := CheckToken(r)
+	if !login_Q {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	id, err := r.Cookie("id")
+	if err != nil {
+		http.Error(w, "Error getting id", http.StatusInternalServerError)
+		return
+	}
+
+	idInt, err := strconv.Atoi(id.Value)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	LogoutUser(idInt)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "id",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+	})
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func Init() {
@@ -371,10 +496,14 @@ func Init() {
 	http.HandleFunc("/webhook", handleWebhook)
 
 	//testing
-	http.HandleFunc("/create_my_portal_session", createMyPortalSession)
+	http.HandleFunc("/testeLOGIN", testLogin)
 
 	//db
 	http.HandleFunc("/create-user", createUser)
+
+	//auth
+	http.HandleFunc("/login-user", loginUsr)
+	http.HandleFunc("/logout-user", logoutUsr)
 
 	addr := "localhost:4242"
 	log.Printf("Listening on %s", addr)

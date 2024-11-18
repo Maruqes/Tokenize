@@ -131,6 +131,18 @@ func GetUser(id int) (User, error) {
 	return user, err
 }
 
+func GetUserByEmail(email string) (User, error) {
+	row := db.QueryRow(`
+		SELECT id, stripe_id, email, name, is_active
+		FROM users
+		WHERE email = ?
+	`, email)
+	var user User
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
+	return user, err
+}
+
+
 func ActivateUser(id int) error {
 	_, err := db.Exec(`
 		UPDATE users
@@ -166,4 +178,18 @@ func hashPassword(password string) (string, error) {
 func VerifyPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func CheckUserPassword(id int, password string) bool {
+	row := db.QueryRow(`
+		SELECT password
+		FROM users
+		WHERE id = ?
+	`, id)
+	var hashedPassword string
+	err := row.Scan(&hashedPassword)
+	if err != nil {
+		return false
+	}
+	return VerifyPassword(password, hashedPassword)
 }
