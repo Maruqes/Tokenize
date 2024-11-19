@@ -1,7 +1,6 @@
 package Tokenize
 
 import (
-	"github.com/Maruqes/Tokenize/database"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/Maruqes/Tokenize/database"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
@@ -532,7 +533,7 @@ func Init(port string) {
 	//db
 	http.HandleFunc("/create-user", createUser)
 
-	//auth	
+	//auth
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
 

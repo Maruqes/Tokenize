@@ -1,8 +1,9 @@
 package Tokenize
 
 import (
-	"github.com/Maruqes/Tokenize/database"
 	"fmt"
+
+	"github.com/Maruqes/Tokenize/database"
 )
 
 type permissions struct {
