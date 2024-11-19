@@ -1,6 +1,9 @@
 package database
 
-import "log"
+import (
+	"database/sql"
+	"log"
+)
 
 type Permission struct {
 	ID         int
@@ -13,7 +16,7 @@ func CreatePermissionsTable() error {
 	CREATE TABLE IF NOT EXISTS permissions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		permission TEXT NOT NULL,
-		name TEXT NOT NULL,
+		name TEXT NOT NULL
 	);`
 
 	_, err := db.Exec(query)
@@ -21,7 +24,7 @@ func CreatePermissionsTable() error {
 		log.Fatal(err)
 	}
 
-	query = `
+	query2 := `
 	CREATE TABLE IF NOT EXISTS user_permissions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
@@ -30,7 +33,7 @@ func CreatePermissionsTable() error {
 		FOREIGN KEY(permission_id) REFERENCES permissions(id)
 	);`
 
-	_, err = db.Exec(query)
+	_, err = db.Exec(query2)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -124,4 +127,32 @@ func CheckUserPermission(userID int, permissionID int) bool {
 	var result int
 	err := row.Scan(&result)
 	return err == nil
+}
+
+func GetPermissionWithName(name string) (Permission, error) {
+	query := `SELECT id, name, permission FROM permissions WHERE name = ?;`
+	row := db.QueryRow(query, name)
+	var permission Permission
+	err := row.Scan(&permission.ID, &permission.Name, &permission.Permission)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return Permission{-1, "-1", "-1"}, nil
+		}
+		return Permission{-1, "-1", "-1"}, err
+	}
+	return permission, nil
+}
+
+func GetPermissionWithPermission(permission_type_string string) (Permission, error) {
+	query := `SELECT id, name, permission FROM permissions WHERE permission = ?;`
+	row := db.QueryRow(query, permission_type_string)
+	var permission Permission
+	err := row.Scan(&permission.ID, &permission.Name, &permission.Permission)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return Permission{-1, "-1", "-1"}, nil
+		}
+		return Permission{-1, "-1", "-1"}, err
+	}
+	return permission, nil
 }

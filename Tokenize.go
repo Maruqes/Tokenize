@@ -487,6 +487,7 @@ func Init() {
 
 	database.Init()
 	database.CreateTable()
+	database.CreatePermissionsTable()
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
