@@ -532,7 +532,7 @@ func Init(port string) {
 	//db
 	http.HandleFunc("/create-user", createUser)
 
-	//auth
+	//auth	
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
 

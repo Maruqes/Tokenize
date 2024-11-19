@@ -1,4 +1,4 @@
-module Tokenize
+module github.com/Maruqes/Tokenize
 
 go 1.23.1
 
