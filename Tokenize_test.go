@@ -1,8 +1,9 @@
 package Tokenize
 
 import (
-	"Tokenize/database"
 	"testing"
+
+	"github.com/Maruqes/Tokenize/database"
 )
 
 func TestThis(t *testing.T) {

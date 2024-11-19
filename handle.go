@@ -1,11 +1,12 @@
 package Tokenize
 
 import (
-	"Tokenize/database"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/Maruqes/Tokenize/database"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"

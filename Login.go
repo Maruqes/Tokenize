@@ -1,11 +1,12 @@
 package Tokenize
 
 import (
-	"Tokenize/database"
 	"crypto/rand"
 	"math/big"
 	"net/http"
 	"strconv"
+
+	"github.com/Maruqes/Tokenize/database"
 )
 
 type Login struct {

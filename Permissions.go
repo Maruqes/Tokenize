@@ -1,7 +1,7 @@
 package Tokenize
 
 import (
-	"Tokenize/database"
+	"github.com/Maruqes/Tokenize/database"
 	"fmt"
 )
 
