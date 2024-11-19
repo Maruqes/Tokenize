@@ -6,12 +6,14 @@ import (
 )
 
 func TestThis(t *testing.T) {
-	Init()
+	Init("4242")
 }
+
+var perms = permissions{}
 
 func TestPermission1(t *testing.T) {
 	database.Init()
-	err := CreatePermission("balcao", "bar:write")
+	err := perms.CreatePermission("balcao", "bar:write")
 	if err != nil {
 		t.Error(err)
 	}
@@ -19,7 +21,7 @@ func TestPermission1(t *testing.T) {
 
 func TestPermission2(t *testing.T) {
 	database.Init()
-	err := DeletePermission(5)
+	err := perms.DeletePermission(5)
 	if err != nil {
 		t.Error(err)
 	}
@@ -27,7 +29,7 @@ func TestPermission2(t *testing.T) {
 
 func TestPermission3(t *testing.T) {
 	database.Init()
-	err := AddUserPermission(1, 1)
+	err := perms.AddUserPermission(1, 1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -35,15 +37,16 @@ func TestPermission3(t *testing.T) {
 
 func TestPermission4(t *testing.T) {
 	database.Init()
-	err := RemoveUserPermission(1, 1)
+	err := perms.RemoveUserPermission(1, 1)
 	if err != nil {
 		t.Error(err)
 	}
+
 }
 
 func TestPermission5(t *testing.T) {
 	database.Init()
-	perms, err := GetUserPermissions(1)
+	perms, err := perms.GetUserPermissions(1)
 	t.Log(perms)
 
 	if err != nil {

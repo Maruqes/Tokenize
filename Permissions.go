@@ -5,8 +5,11 @@ import (
 	"fmt"
 )
 
+type permissions struct {
+}
+
 // only all:all perms can do this
-func CreatePermission(name, permission string) error {
+func (*permissions) CreatePermission(name, permission string) error {
 	permission_type, err := database.GetPermissionWithName(name)
 	if permission_type.ID != -1 || err != nil {
 		return fmt.Errorf("permission %s already exists", name)
@@ -21,7 +24,7 @@ func CreatePermission(name, permission string) error {
 	return nil
 }
 
-func DeletePermission(id int) error {
+func (*permissions) DeletePermission(id int) error {
 	exist := database.CheckPermissionID(id)
 	if !exist {
 		return fmt.Errorf("permission %d does not exist", id)
@@ -31,7 +34,7 @@ func DeletePermission(id int) error {
 	return nil
 }
 
-func AddUserPermission(userID, permissionID int) error {
+func (*permissions) AddUserPermission(userID, permissionID int) error {
 	exist_id := database.CheckIfUserIDExists(userID)
 	if !exist_id {
 		return fmt.Errorf("user %d does not exist", userID)
@@ -51,7 +54,7 @@ func AddUserPermission(userID, permissionID int) error {
 	return nil
 }
 
-func RemoveUserPermission(userID, permissionID int) error {
+func (*permissions) RemoveUserPermission(userID, permissionID int) error {
 	exist_id := database.CheckIfUserIDExists(userID)
 	if !exist_id {
 		return fmt.Errorf("user %d does not exist", userID)
@@ -67,7 +70,7 @@ func RemoveUserPermission(userID, permissionID int) error {
 }
 
 // only the own user or all:all perms can do this
-func GetUserPermissions(userID int) ([]database.Permission, error) {
+func (*permissions) GetUserPermissions(userID int) ([]database.Permission, error) {
 	exist_id := database.CheckIfUserIDExists(userID)
 	if !exist_id {
 		return []database.Permission{}, fmt.Errorf("user %d does not exist", userID)

@@ -17,7 +17,7 @@ var logins = map[int]Login{}
 
 const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-func GenerateSecureToken(length int) (string, error) {
+func generateSecureToken(length int) (string, error) {
 	token := make([]byte, length)
 	for i := range token {
 		// Escolhe um índice aleatório dentro do charset
@@ -30,7 +30,7 @@ func GenerateSecureToken(length int) (string, error) {
 	return string(token), nil
 }
 
-func LoginUser(email, password string) (string, database.User, error) {
+func loginUser(email, password string) (string, database.User, error) {
 	usr, err := database.GetUserByEmail(email)
 	if err != nil {
 		return "", usr, err
@@ -41,7 +41,7 @@ func LoginUser(email, password string) (string, database.User, error) {
 		return "", usr, nil
 	}
 
-	token, err := GenerateSecureToken(64)
+	token, err := generateSecureToken(64)
 	if err != nil {
 		return "", usr, err
 	}
@@ -53,11 +53,11 @@ func LoginUser(email, password string) (string, database.User, error) {
 	return token, usr, nil
 }
 
-func LogoutUser(userID int) {
+func logoutUser(userID int) {
 	delete(logins, userID)
 }
 
-func CheckToken(r *http.Request) bool {
+func checkToken(r *http.Request) bool {
 	//get cookies id and token
 	cookie, err := r.Cookie("id")
 	if err != nil {

@@ -35,6 +35,7 @@ import (
 //dar duracao a subscricao
 
 var domain = os.Getenv("DOMAIN")
+var Permissions = permissions{}
 
 func getCustomer(id string) (*stripe.Customer, error) {
 	customer, err := customer.Get(id, nil)
@@ -132,7 +133,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := CheckToken(r)
+	login := checkToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -188,7 +189,7 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	// For demonstration purposes, we're using the Checkout session to retrieve the customer ID.
 	// Typically this is stored alongside the authenticated user in your database.
 
-	login := CheckToken(r)
+	login := checkToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -202,9 +203,21 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	}
 	customer_id := customer_id_cookie.Value
 
+	//get customer
+	customerIDInt, err := strconv.Atoi(customer_id)
+	if err != nil {
+		http.Error(w, "Invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	usr, err := database.GetUser(customerIDInt)
+	if err != nil {
+		http.Error(w, "Error getting customer", http.StatusInternalServerError)
+		return
+	}
+
 	// Authenticate your user.
 	params := &stripe.BillingPortalSessionParams{
-		Customer:  stripe.String(customer_id),
+		Customer:  stripe.String(usr.StripeID),
 		ReturnURL: stripe.String(domain),
 	}
 	ps, _ := portalsession.New(params)
@@ -329,6 +342,13 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+
+	login := checkToken(r)
+	if login {
+		http.Error(w, "Already logged in, cant create an account", http.StatusUnauthorized)
+		return
+	}
+
 	var credentials struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -389,7 +409,7 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, usr, err := LoginUser(credentials.Email, credentials.Password)
+	token, usr, err := loginUser(credentials.Email, credentials.Password)
 	if err != nil || token == "" {
 		http.Error(w, "Failed to login", http.StatusInternalServerError)
 		return
@@ -416,7 +436,7 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 }
 
 func testLogin(w http.ResponseWriter, r *http.Request) {
-	login_Q := CheckToken(r)
+	login_Q := checkToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -444,7 +464,7 @@ func testLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
-	login_Q := CheckToken(r)
+	login_Q := checkToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -462,7 +482,7 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	LogoutUser(idInt)
+	logoutUser(idInt)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "id",
 		Value:    "",
@@ -482,7 +502,16 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func Init() {
+// set port like "4242"
+func Init(port string) {
+	port_int, err := strconv.Atoi(port)
+	if err != nil {
+		log.Fatal("Invalid port")
+	}
+	if port_int <= 0 || port_int > 65535 {
+		log.Fatal("Invalid port")
+	}
+
 	fmt.Println("Init")
 
 	database.Init()
@@ -491,7 +520,8 @@ func Init() {
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
-	http.Handle("/", http.FileServer(http.Dir("public")))
+	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
@@ -506,7 +536,7 @@ func Init() {
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
 
-	addr := "localhost:4242"
+	addr := "localhost:" + port
 	log.Printf("Listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
