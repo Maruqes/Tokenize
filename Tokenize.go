@@ -505,6 +505,15 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 
 // set port like "4242"
 func Init(port string) {
+
+	//check if env variables are set
+	if os.Getenv("SECRET_KEY") == "" ||
+		os.Getenv("ENDPOINT_SECRET") == "" ||
+		os.Getenv("SUBSCRIPTION_PRICE_ID") == "" ||
+		os.Getenv("DOMAIN") == "" {
+		log.Fatal("Missing env variables")
+	}
+
 	port_int, err := strconv.Atoi(port)
 	if err != nil {
 		log.Fatal("Invalid port")
@@ -521,7 +530,7 @@ func Init(port string) {
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
-	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
