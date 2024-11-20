@@ -36,8 +36,8 @@ func (*permissions) DeletePermission(id int) error {
 }
 
 func (*permissions) AddUserPermission(userID, permissionID int) error {
-	exist_id := database.CheckIfUserIDExists(userID)
-	if !exist_id {
+	exist_id, err := database.CheckIfUserIDExists(userID)
+	if err != nil || !exist_id {
 		return fmt.Errorf("user %d does not exist", userID)
 	}
 
@@ -56,8 +56,8 @@ func (*permissions) AddUserPermission(userID, permissionID int) error {
 }
 
 func (*permissions) RemoveUserPermission(userID, permissionID int) error {
-	exist_id := database.CheckIfUserIDExists(userID)
-	if !exist_id {
+	exist_id, err := database.CheckIfUserIDExists(userID)
+	if err != nil || !exist_id {
 		return fmt.Errorf("user %d does not exist", userID)
 	}
 
@@ -72,8 +72,8 @@ func (*permissions) RemoveUserPermission(userID, permissionID int) error {
 
 // only the own user or all:all perms can do this
 func (*permissions) GetUserPermissions(userID int) ([]database.Permission, error) {
-	exist_id := database.CheckIfUserIDExists(userID)
-	if !exist_id {
+	exist_id, err := database.CheckIfUserIDExists(userID)
+	if err != nil || !exist_id {
 		return []database.Permission{}, fmt.Errorf("user %d does not exist", userID)
 	}
 

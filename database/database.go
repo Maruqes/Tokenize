@@ -109,7 +109,7 @@ func SetUserStripeID(id int, stripeID string) error {
 	return err
 }
 
-func CheckIfUserIDExists(id int) bool {
+func CheckIfUserIDExists(id int) (bool, error) {
 	row := db.QueryRow(`
 		SELECT id
 		FROM users
@@ -117,7 +117,12 @@ func CheckIfUserIDExists(id int) bool {
 	`, id)
 	var result int
 	err := row.Scan(&result)
-	return err == nil
+	if err == sql.ErrNoRows {
+		return false, nil // User ID does not exist
+	} else if err != nil {
+		return false, err // An error occurred
+	}
+	return true, nil // User ID exists
 }
 
 func GetUser(id int) (User, error) {
@@ -141,7 +146,6 @@ func GetUserByEmail(email string) (User, error) {
 	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
 	return user, err
 }
-
 
 func ActivateUser(id int) error {
 	_, err := db.Exec(`

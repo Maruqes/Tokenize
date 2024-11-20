@@ -61,3 +61,8 @@ func TestPermission5(t *testing.T) {
 		t.Log(perm)
 	}
 }
+
+func TestPermission6(t *testing.T) {
+	database.Init()
+	getLastTimeOffline(1)
+}

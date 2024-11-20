@@ -112,7 +112,11 @@ func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 
 func validateUserInfoToActivate(customer_id string) (database.User, error) {
 	customerIDInt, err := strconv.Atoi(customer_id)
-	if customer_id == "" || err != nil || !database.CheckIfUserIDExists(customerIDInt) {
+	if err != nil {
+		return database.User{}, fmt.Errorf("invalid user id")
+	}
+	exists, err := database.CheckIfUserIDExists(customerIDInt)
+	if customer_id == "" || err != nil || !exists {
 		return database.User{}, fmt.Errorf("invalid user id")
 	}
 
@@ -382,7 +386,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create user check the credentials", http.StatusInternalServerError)
 		return
 	}
-
+	logMessage("User created with id/name " + strconv.Itoa(int(id)) + "/" + credentials.Username)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(`{"id": %d}`, id)))
 }
@@ -527,10 +531,13 @@ func Init(port string) {
 	database.Init()
 	database.CreateTable()
 	database.CreatePermissionsTable()
+	database.CreateOfflineTable()
+
+	initLogs()
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
-	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
@@ -539,12 +546,15 @@ func Init(port string) {
 	//testing
 	http.HandleFunc("/testeLOGIN", testLogin)
 
-	//db
-	http.HandleFunc("/create-user", createUser)
-
 	//auth
+	http.HandleFunc("/create-user", createUser)
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
+
+	//admin
+	http.HandleFunc("/pay-offline", payOffline)
+	http.HandleFunc("/get-offline-id", getOfflineWithID)
+	http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
 
 	addr := "localhost:" + port
 	log.Printf("Listening on %s", addr)
