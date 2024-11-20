@@ -514,7 +514,10 @@ func Init(port string) {
 	if os.Getenv("SECRET_KEY") == "" ||
 		os.Getenv("ENDPOINT_SECRET") == "" ||
 		os.Getenv("SUBSCRIPTION_PRICE_ID") == "" ||
-		os.Getenv("DOMAIN") == "" {
+		os.Getenv("DOMAIN") == "" ||
+		os.Getenv("LOGS_FILE") == "" ||
+		os.Getenv("SECRET_ADMIN") == "" ||
+		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_DAYS") == "" {
 		log.Fatal("Missing env variables")
 	}
 

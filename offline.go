@@ -166,9 +166,13 @@ func getLastTimeOffline(userID int) (database.Date, error) {
 		return dateI.Before(dateJ)
 	})
 
-	time_each_sub := (24 * time.Hour) * 31
-	full_diff := time.Duration(0)
-	to_compare := time.Now()
+	numberOfSubscriptionDays, err := strconv.Atoi(os.Getenv("NUMBER_OF_SUBSCRIPTIONS_DAYS"))
+	if err != nil {
+		return database.Date{}, fmt.Errorf("invalid NUMBER_OF_SUBSCRIPTIONS_DAYS: %v", err)
+	}
+	time_each_sub := (24 * time.Hour) * time.Duration(numberOfSubscriptionDays)
+	last_time := time.Now()
+	set_last := false
 
 	for i := 0; i < len(offlinePayments); i++ {
 		date := time.Date(offlinePayments[i].DateOfPayment.Year, time.Month(offlinePayments[i].DateOfPayment.Month), offlinePayments[i].DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
@@ -176,20 +180,20 @@ func getLastTimeOffline(userID int) (database.Date, error) {
 		fmt.Println(date)
 		fmt.Println(date_end)
 
-		if date_end.After(to_compare) {
-			to_compare = date_end
-			fmt.Println("to_compare")
-		}
-
-		if date_end.Before(time.Now()) {
-			fmt.Println("break")
+		if !set_last {
+			if date_end.After(last_time) {
+				last_time = date_end
+				set_last = true
+				fmt.Println("to_compare")
+			}
+		} else {
+			last_time = last_time.Add(time_each_sub * time.Duration(offlinePayments[i].Quantity))
 		}
 
 		fmt.Printf("\n\n\n")
-
 	}
 
-	fmt.Println(full_diff)
+	fmt.Println(last_time)
 
 	return offlinePayments[len(offlinePayments)-1].DateOfPayment, nil
 }

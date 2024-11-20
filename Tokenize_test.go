@@ -64,5 +64,5 @@ func TestPermission5(t *testing.T) {
 
 func TestPermission6(t *testing.T) {
 	database.Init()
-	getLastTimeOffline(1)
+	getLastTimeOffline(5)
 }
