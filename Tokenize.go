@@ -187,6 +187,8 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logMessage("Checkout session created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+
 	http.Redirect(w, r, s.URL, http.StatusSeeOther)
 }
 
@@ -227,6 +229,7 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	}
 	ps, _ := portalsession.New(params)
 	log.Printf("ps.New: %v", ps.URL)
+	logMessage("Portal session created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
 	http.Redirect(w, r, ps.URL, http.StatusSeeOther)
 }
 
@@ -368,6 +371,8 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Password)
 
+	logMessage("Create user attempt with email " + credentials.Email + " and username " + credentials.Username)
+
 	if credentials.Username == "" || credentials.Password == "" || credentials.Email == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -387,6 +392,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logMessage("User created with id/name " + strconv.Itoa(int(id)) + "/" + credentials.Username)
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(`{"id": %d}`, id)))
 }
@@ -408,6 +414,8 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Received credentials: %s / %s", credentials.Email, credentials.Password)
+
+	logMessage("Login attempt with email " + credentials.Email)
 
 	if credentials.Email == "" || credentials.Password == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -436,6 +444,8 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Expires:  time.Now().Add(5 * 24 * time.Hour),
 	})
+
+	logMessage("User logged in with id/name " + strconv.Itoa(usr.ID) + "/" + usr.Name)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -503,6 +513,8 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		HttpOnly: true,
 	})
+
+	logMessage("User logged out with id " + strconv.Itoa(idInt))
 
 	w.WriteHeader(http.StatusOK)
 }
