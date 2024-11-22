@@ -75,7 +75,7 @@ func CheckIfCanUserBeAdded(email, name string) (bool, error) {
 func AddUser(stripeID, email, name, password string) (int64, error) {
 	canBeAdded, err := CheckIfCanUserBeAdded(email, name)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error checking if user can be added maybe user/email being used")
 	}
 	if !canBeAdded {
 		return 0, fmt.Errorf("user email or username already exists")

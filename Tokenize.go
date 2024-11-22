@@ -401,7 +401,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	id, err := database.AddUser("", credentials.Email, credentials.Username, credentials.Password)
 	if err != nil {
-		http.Error(w, "Failed to create user check the credentials", http.StatusInternalServerError)
+		http.Error(w, "Failed to create user check the credentials with err: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	logMessage("User created with id/name " + strconv.Itoa(int(id)) + "/" + credentials.Username)
