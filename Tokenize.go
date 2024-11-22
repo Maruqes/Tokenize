@@ -584,7 +584,7 @@ func Init(port string) {
 	http.HandleFunc("/get-offline-id", getOfflineWithID)
 	http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
 
-	addr := "localhost:" + port
+	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
 
 	// Start HTTPS server
