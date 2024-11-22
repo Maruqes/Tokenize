@@ -587,9 +587,6 @@ func Init(port string) {
 	addr := "localhost:" + port
 	log.Printf("Listening on %s", addr)
 
-	certFile := os.Getenv("CERT_FILE")
-	keyFile := os.Getenv("KEY_FILE")
-
 	// Start HTTPS server
-	log.Fatal(http.ListenAndServeTLS(addr, certFile, keyFile, nil))
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
