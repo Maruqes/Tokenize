@@ -398,7 +398,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//enviar email de confirmacao
-
 	id, err := database.AddUser("", credentials.Email, credentials.Username, credentials.Password)
 	if err != nil {
 		http.Error(w, "Failed to create user check the credentials with err: "+err.Error(), http.StatusInternalServerError)
