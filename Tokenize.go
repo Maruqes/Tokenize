@@ -564,7 +564,7 @@ func Init(port string) {
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
-	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
