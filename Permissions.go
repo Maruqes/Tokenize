@@ -79,3 +79,17 @@ func (*permissions) GetUserPermissions(userID int) ([]database.Permission, error
 
 	return database.GetUserPermissions(userID)
 }
+
+func (p *permissions) HasPermission(userID int, requiredPermission string) bool {
+	userPermissions, err := database.GetUserPermissions(userID)
+	if err != nil {
+		return false
+	}
+
+	for _, perm := range userPermissions {
+		if perm.Permission == requiredPermission {
+			return true
+		}
+	}
+	return false
+}

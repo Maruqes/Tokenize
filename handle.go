@@ -50,6 +50,12 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 		return err
 	}
 
+	//check if the customer has the metadata
+	_, exists := customer.Metadata["tokenize_id"]
+	if !exists {
+		log.Printf("tokenize_id metadata is missing for customer %s", customer.ID)
+		return fmt.Errorf("missing tokenize_id in customer metadata")
+	}
 	fmt.Printf("Metadata: %v\n", customer.Metadata["tokenize_id"])
 
 	tokenizeID, err := strconv.Atoi(customer.Metadata["tokenize_id"])

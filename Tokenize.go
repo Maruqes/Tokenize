@@ -105,6 +105,19 @@ func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 		}
 	} else {
 		finalCustomer = customer_exists
+		if finalCustomer.Metadata["tokenize_id"] != customer_id {
+			customerParams := &stripe.CustomerParams{
+				Metadata: map[string]string{
+					"tokenize_id": customer_id,
+					"username":    usr.Name,
+				},
+			}
+			_, err := customer.Update(finalCustomer.ID, customerParams)
+			if err != nil {
+				log.Printf("Error updating customer metadata: %v", err)
+				return nil, err
+			}
+		}
 	}
 
 	return finalCustomer, nil
@@ -573,5 +586,10 @@ func Init(port string) {
 
 	addr := "localhost:" + port
 	log.Printf("Listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, nil))
+
+	certFile := os.Getenv("CERT_FILE")
+	keyFile := os.Getenv("KEY_FILE")
+
+	// Start HTTPS server
+	log.Fatal(http.ListenAndServeTLS(addr, certFile, keyFile, nil))
 }
