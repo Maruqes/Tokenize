@@ -531,6 +531,10 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
 // set port like "4242"
 func Init(port string) {
 
@@ -582,6 +586,8 @@ func Init(port string) {
 	http.HandleFunc("/pay-offline", payOffline)
 	http.HandleFunc("/get-offline-id", getOfflineWithID)
 	http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
+
+	http.HandleFunc("/health", healthCheck)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
