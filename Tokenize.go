@@ -151,7 +151,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := checkToken(r)
+	login := CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -220,7 +220,7 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	// For demonstration purposes, we're using the Checkout session to retrieve the customer ID.
 	// Typically this is stored alongside the authenticated user in your database.
 
-	login := checkToken(r)
+	login := CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -344,7 +344,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := checkToken(r)
+	login := CheckToken(r)
 	if login {
 		http.Error(w, "Already logged in, cant create an account", http.StatusUnauthorized)
 		return
@@ -443,7 +443,7 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 }
 
 func testLogin(w http.ResponseWriter, r *http.Request) {
-	login_Q := checkToken(r)
+	login_Q := CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -471,7 +471,7 @@ func testLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
-	login_Q := checkToken(r)
+	login_Q := CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return

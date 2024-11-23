@@ -3,6 +3,7 @@ package Tokenize
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 
@@ -87,4 +88,21 @@ func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func GetUserTokenizeCookies(r *http.Request) (int, string, error) {
+	cookie, err := r.Cookie("id")
+	if err != nil {
+		return 0, "", err
+	}
+	id, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return 0, "", err
+	}
+	cookie, err = r.Cookie("token")
+	if err != nil {
+		return 0, "", err
+	}
+	token := cookie.Value
+	return id, token, nil
 }

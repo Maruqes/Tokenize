@@ -34,7 +34,7 @@ func payOffline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login_Q := checkToken(r)
+	login_Q := CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -117,7 +117,7 @@ func getOfflineWithID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login_Q := checkToken(r)
+	login_Q := CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -211,7 +211,7 @@ func getLastTimeOfflineRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login_Q := checkToken(r)
+	login_Q := CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return

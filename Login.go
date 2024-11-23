@@ -58,7 +58,7 @@ func logoutUser(userID int) {
 	delete(logins, userID)
 }
 
-func checkToken(r *http.Request) bool {
+func CheckToken(r *http.Request) bool {
 	//get cookies id and token
 	cookie, err := r.Cookie("id")
 	if err != nil {
