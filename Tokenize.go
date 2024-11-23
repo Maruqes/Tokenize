@@ -88,6 +88,11 @@ func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 	if err != nil {
 		log.Printf("customer.Get problem assuming it does not exists")
 
+		if checkIfEmailIsBeingUsedInStripe(usr.Email) {
+			log.Printf("email already in use")
+			return nil, fmt.Errorf("email already in use")
+		}
+
 		if checkIfIDBeingUsedInStripe(customer_id) {
 			log.Printf("id already in use")
 			return nil, fmt.Errorf("id already in use BIG PROBLEM")
@@ -98,6 +103,8 @@ func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 			log.Printf("customer.New: %v", err)
 			return nil, err
 		}
+		database.SetUserStripeID(usr.ID, finalCustomer.ID)
+		
 	} else {
 		finalCustomer = customer_exists
 		if finalCustomer.Metadata["tokenize_id"] != customer_id {
