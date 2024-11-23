@@ -147,6 +147,28 @@ func GetUserByEmail(email string) (User, error) {
 	return user, err
 }
 
+func GetAllUsers() ([]User, error) {
+	rows, err := db.Query(`
+		SELECT id, stripe_id, email, name, is_active
+		FROM users
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
 func ActivateUser(id int) error {
 	_, err := db.Exec(`
 		UPDATE users
