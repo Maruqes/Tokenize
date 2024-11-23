@@ -75,3 +75,20 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 	}
 	return nil
 }
+
+func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
+	usr, err := database.GetUser(tokenizeID)
+	if err != nil {
+		return false, err
+	}
+
+	if usr.IsActive {
+		return true, nil
+	}
+
+	if val, err := doesHaveOfflinePayments(tokenizeID); err == nil && val {
+		return true, nil
+	}
+
+	return false, nil
+}

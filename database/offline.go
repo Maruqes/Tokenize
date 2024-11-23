@@ -43,6 +43,20 @@ func AddOfflinePayment(user_id int, date_of_payment Date, quantity int) error {
 	return nil
 }
 
+func DoesUserHasOfflinePayments(user_id int) (bool, error) {
+	query := `SELECT * FROM offline_payments WHERE user_id = ?;`
+	rows, err := db.Query(query, user_id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		return true, nil
+	}
+	return false, nil
+}
+
 func GetOfflinePaymentByID(user_id int) ([]OfflinePayment, error) {
 	query := `SELECT * FROM offline_payments WHERE user_id = ?;`
 	rows, err := db.Query(query, user_id)

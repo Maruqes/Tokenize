@@ -172,6 +172,17 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//if has offline payments
+	customerIDInt, err := strconv.Atoi(customer_id)
+	if err != nil {
+		http.Error(w, "Invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	if val, err := doesHaveOfflinePayments(customerIDInt); err == nil && val {
+		http.Error(w, "User has offline payments", http.StatusBadRequest)
+		return
+	}
+
 	//creates or gets the customer
 	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
 	if err != nil {
@@ -545,7 +556,7 @@ func Init(port string) {
 		os.Getenv("DOMAIN") == "" ||
 		os.Getenv("LOGS_FILE") == "" ||
 		os.Getenv("SECRET_ADMIN") == "" ||
-		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_DAYS") == "" {
+		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS") == "" {
 		log.Fatal("Missing env variables")
 	}
 
@@ -568,7 +579,7 @@ func Init(port string) {
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
-	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao

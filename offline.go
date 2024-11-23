@@ -3,7 +3,6 @@ package Tokenize
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -12,24 +11,6 @@ import (
 
 	"github.com/Maruqes/Tokenize/database"
 )
-
-func DailyCheckRoutine(targetHour int, targetMinute int) {
-	for {
-		now := time.Now()
-		nextRun := time.Date(now.Year(), now.Month(), now.Day(), targetHour, targetMinute, 0, 0, now.Location())
-		if now.After(nextRun) {
-			nextRun = nextRun.Add(24 * time.Hour)
-		}
-
-		// Sleep until the next run time.
-		sleepDuration := time.Until(nextRun)
-		log.Printf("Daily task scheduled to run in: %v\n", sleepDuration)
-		time.Sleep(sleepDuration)
-
-		// Perform the daily task.
-		log.Println("Checking for offline payments...")
-	}
-}
 
 func validateDate(date database.Date) bool {
 	if date.Day < 1 || date.Day > 31 {
@@ -88,6 +69,17 @@ func payOffline(w http.ResponseWriter, r *http.Request) {
 
 	if exists, err := database.CheckIfUserIDExists(userID); err != nil || !exists {
 		http.Error(w, "User does not exist", http.StatusBadRequest)
+		return
+	}
+
+	//user com subscription ativa por stripe nao pode pagar offline
+	usr, err := database.GetUser(userID)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	if usr.IsActive {
+		http.Error(w, "User already has an active subscription", http.StatusBadRequest)
 		return
 	}
 
@@ -161,48 +153,58 @@ func getOfflineWithID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(offlinePayments)
 }
 
-func getLastTimeOffline(userID int) (database.Date, error) {
-	offlinePayments, err := database.GetOfflinePaymentByID(userID)
-	if err != nil {
-		return database.Date{}, err
-	}
-
+func getLastTimeAlgorithm(offlinePayments []database.OfflinePayment) (time.Time, error) {
+	// Sort payments by date
 	sort.Slice(offlinePayments, func(i, j int) bool {
 		dateI := time.Date(offlinePayments[i].DateOfPayment.Year, time.Month(offlinePayments[i].DateOfPayment.Month), offlinePayments[i].DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
 		dateJ := time.Date(offlinePayments[j].DateOfPayment.Year, time.Month(offlinePayments[j].DateOfPayment.Month), offlinePayments[j].DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
 		return dateI.Before(dateJ)
 	})
 
-	numberOfSubscriptionDays, err := strconv.Atoi(os.Getenv("NUMBER_OF_SUBSCRIPTIONS_DAYS"))
+	// Get the number of subscription months from the environment variable
+	numberOfSubscriptionMonths, err := strconv.Atoi(os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS"))
 	if err != nil {
-		return database.Date{}, fmt.Errorf("invalid NUMBER_OF_SUBSCRIPTIONS_DAYS: %v", err)
+		return time.Time{}, fmt.Errorf("invalid NUMBER_OF_SUBSCRIPTIONS_MONTHS: %v", err)
 	}
-	time_each_sub := (24 * time.Hour) * time.Duration(numberOfSubscriptionDays)
-	last_time := time.Now()
-	set_last := false
 
-	for i := 0; i < len(offlinePayments); i++ {
-		date := time.Date(offlinePayments[i].DateOfPayment.Year, time.Month(offlinePayments[i].DateOfPayment.Month), offlinePayments[i].DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
-		date_end := date.Add(time_each_sub * time.Duration(offlinePayments[i].Quantity))
-		fmt.Println(date)
-		fmt.Println(date_end)
+	var expiryDate time.Time
 
-		if !set_last {
-			if date_end.After(last_time) {
-				last_time = date_end
-				set_last = true
-				fmt.Println("to_compare")
-			}
+	for _, payment := range offlinePayments {
+		paymentDate := time.Date(payment.DateOfPayment.Year, time.Month(payment.DateOfPayment.Month), payment.DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
+		addedTime := numberOfSubscriptionMonths * payment.Quantity
+
+		if paymentDate.After(expiryDate) {
+			// If the payment is after the current expiry date, start a new subscription
+			expiryDate = paymentDate.AddDate(0, addedTime, 0)
 		} else {
-			last_time = last_time.Add(time_each_sub * time.Duration(offlinePayments[i].Quantity))
+			// Extend the current subscription
+			expiryDate = expiryDate.AddDate(0, addedTime, 0)
 		}
-
-		fmt.Printf("\n\n\n")
 	}
 
-	fmt.Println(last_time)
+	return expiryDate, nil
+}
 
-	return offlinePayments[len(offlinePayments)-1].DateOfPayment, nil
+func getLastTimeOffline(userID int) (database.Date, error) {
+	if ol, err := database.DoesUserHasOfflinePayments(userID); !ol || err != nil {
+		return database.Date{}, nil
+	}
+
+	offlinePayments, err := database.GetOfflinePaymentByID(userID)
+	if err != nil {
+		return database.Date{}, err
+	}
+
+	last_time, err := getLastTimeAlgorithm(offlinePayments)
+	if err != nil {
+		return database.Date{}, err
+	}
+
+	return database.Date{
+		Day:   last_time.Day(),
+		Month: int(last_time.Month()),
+		Year:  last_time.Year(),
+	}, nil
 }
 
 func getLastTimeOfflineRequest(w http.ResponseWriter, r *http.Request) {
@@ -245,4 +247,21 @@ func getLastTimeOfflineRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(lastTime)
+}
+
+func doesHaveOfflinePayments(userID int) (bool, error) {
+	lastTime, err := getLastTimeOffline(userID)
+	if err != nil {
+		return false, err
+	}
+
+	if (lastTime == database.Date{}) {
+		return false, nil
+	}
+	fmt.Println(lastTime)
+	if time.Now().After(time.Date(lastTime.Year, time.Month(lastTime.Month), lastTime.Day, 0, 0, 0, 0, time.UTC)) {
+		return false, nil
+	}
+
+	return true, nil
 }
