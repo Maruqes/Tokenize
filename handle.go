@@ -12,13 +12,9 @@ import (
 	"github.com/stripe/stripe-go/v81"
 )
 
-func handle_cancel_update(subscription stripe.Subscription) {
-	fmt.Println(subscription.CancelAt)   //quando a atual assinatura será cancelada
-	fmt.Println(subscription.CanceledAt) //quando foi cancelada
-}
-
 func handleSubscriptionDeleted(subscription stripe.Subscription) {
 	fmt.Printf("Subscription deleted for %s.", subscription.ID)
+	logMessage(fmt.Sprintf("Subscription deleted for %s.", subscription.ID))
 	database.DeactivateUserByStripeID(subscription.Customer.ID)
 }
 

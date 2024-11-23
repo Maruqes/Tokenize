@@ -154,14 +154,12 @@ func getOfflineWithID(w http.ResponseWriter, r *http.Request) {
 }
 
 func getLastTimeAlgorithm(offlinePayments []database.OfflinePayment) (time.Time, error) {
-	// Sort payments by date
 	sort.Slice(offlinePayments, func(i, j int) bool {
 		dateI := time.Date(offlinePayments[i].DateOfPayment.Year, time.Month(offlinePayments[i].DateOfPayment.Month), offlinePayments[i].DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
 		dateJ := time.Date(offlinePayments[j].DateOfPayment.Year, time.Month(offlinePayments[j].DateOfPayment.Month), offlinePayments[j].DateOfPayment.Day, 0, 0, 0, 0, time.UTC)
 		return dateI.Before(dateJ)
 	})
 
-	// Get the number of subscription months from the environment variable
 	numberOfSubscriptionMonths, err := strconv.Atoi(os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS"))
 	if err != nil {
 		return time.Time{}, fmt.Errorf("invalid NUMBER_OF_SUBSCRIPTIONS_MONTHS: %v", err)
@@ -258,7 +256,7 @@ func doesHaveOfflinePayments(userID int) (bool, error) {
 	if (lastTime == database.Date{}) {
 		return false, nil
 	}
-	fmt.Println(lastTime)
+
 	if time.Now().After(time.Date(lastTime.Year, time.Month(lastTime.Month), lastTime.Day, 0, 0, 0, 0, time.UTC)) {
 		return false, nil
 	}

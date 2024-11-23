@@ -295,16 +295,6 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		}
 		log.Printf("Subscription deleted for %s.", subscription.ID)
 		handleSubscriptionDeleted(subscription)
-	case "customer.subscription.updated":
-		var subscription stripe.Subscription
-		err := json.Unmarshal(event.Data.Raw, &subscription)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Subscription updated for %s.", subscription.ID)
-		handle_cancel_update(subscription)
 	case "customer.subscription.created":
 		var subscription stripe.Subscription
 		err := json.Unmarshal(event.Data.Raw, &subscription)
@@ -314,29 +304,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Subscription created for %s.", subscription.ID)
-		// Then define and call a func to handle the successful attachment of a PaymentMethod.
-		// handleSubscriptionCreated(subscription)
-	case "customer.subscription.trial_will_end":
-		var subscription stripe.Subscription
-		err := json.Unmarshal(event.Data.Raw, &subscription)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Subscription trial will end for %s.", subscription.ID)
-		// Then define and call a func to handle the successful attachment of a PaymentMethod.
-		// handleSubscriptionTrialWillEnd(subscription)
-	case "entitlements.active_entitlement_summary.updated":
-		var subscription stripe.Subscription
-		err := json.Unmarshal(event.Data.Raw, &subscription)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Active entitlement summary updated for %s.", subscription.ID) // Then define and call a func to handle active entitlement summary updated.
-		// handleEntitlementUpdated(subscription)
+		logMessage("Subscription in stripe created for " + subscription.Customer.ID)
 	case "customer.created":
 		var our_customer stripe.Customer
 		err := json.Unmarshal(event.Data.Raw, &our_customer)
@@ -347,6 +315,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		}
 
 		log.Printf("Customer created for %s with email %s  ID:%s.", our_customer.Name, our_customer.Email, our_customer.ID)
+		logMessage("Customer in stripe created for " + our_customer.ID)
 	case "invoice.payment_succeeded":
 		var invoice stripe.Invoice
 		err := json.Unmarshal(event.Data.Raw, &invoice)
@@ -356,13 +325,13 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Printf("Invoice payment succeeded for %s.", invoice.ID)
+		logMessage("Invoice payment succeeded for " + invoice.Customer.ID)
 		err = handlePaymentSuccess(invoice)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		// Then define and call a func to handle the successful payment of an invoice.
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 	}
