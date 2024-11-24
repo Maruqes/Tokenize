@@ -53,6 +53,31 @@ Only work if user is logged in
   Get the payments by user_id payd with "/pay-offline"
 
 
+## .env File
+- **"SECRET_KEY"**
+Your secret stripe key example -> "sk_test_9SN7..."
+
+- **"PUBLISHABLE_KEY"**
+Your publishable stripe key example -> "pk_test_9SN7..."
+
+- **"SUBSCRIPTION_PRICE_ID"**
+The price id for the subscription stripe key example -> "price_0  DEJ47..."
+
+- **"ENDPOINT_SECRET"**
+Your endpoint secret stripe key example -> "whsec_9274..."
+
+- **"DOMAIN"**
+Your domain example -> "http://localhost:4242"
+
+- **"SECRET_ADMIN"**
+Your secret admin key (the one used for offline payments) example -> "sk_test_9SN7..."
+
+- **"LOGS_FILE"**
+Your logs file path key example -> "logs.txt"
+
+- **"NUMBER_OF_SUBSCRIPTIONS_MONTHS"**
+The number of months your subscription is -> "12"
+
 
 
 ## Setup Instructions
