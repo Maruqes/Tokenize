@@ -38,6 +38,9 @@ import (
 var domain = os.Getenv("DOMAIN")
 var Permissions = permissions{}
 
+var success_path = ""
+var cancel_path = ""
+
 func getCustomer(id string) (*stripe.Customer, error) {
 	customer, err := customer.Get(id, nil)
 	if err != nil {
@@ -104,7 +107,7 @@ func handleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 			return nil, err
 		}
 		database.SetUserStripeID(usr.ID, finalCustomer.ID)
-		
+
 	} else {
 		finalCustomer = customer_exists
 		if finalCustomer.Metadata["tokenize_id"] != customer_id {
@@ -202,8 +205,8 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String(domain + "/success.html?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:  stripe.String(domain + "/cancel.html"),
+		SuccessURL: stripe.String(domain + success_path),
+		CancelURL:  stripe.String(domain + cancel_path),
 	}
 
 	s, err := session.New(checkoutParams)
@@ -518,7 +521,14 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // set port like "4242"
-func Init(port string) {
+func Init(port string, success string, cancel string) {
+
+	success_path = success
+	cancel_path = cancel
+
+	if success[0] != '/' || cancel[0] != '/' {
+		panic("Success/Cancel path must start with /")
+	}
 
 	//check if env variables are set
 	if os.Getenv("SECRET_KEY") == "" ||

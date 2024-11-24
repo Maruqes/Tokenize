@@ -7,7 +7,7 @@ import (
 )
 
 func TestThis(t *testing.T) {
-	Init("4242")
+	Init("4242", "/success.html", "/cancel.html")
 }
 
 var perms = permissions{}
