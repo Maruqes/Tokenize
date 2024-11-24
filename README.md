@@ -9,7 +9,7 @@
   - Subscriptions via Stripe.
   - Offline payments.
 - **Admin Functions**:
-  - Configurable permissions for different user roles (superadmin, admin, and no access).
+  - Configurable permissions for different user roles.
 - **Webhooks**:
   - Automated responses to events like customer creation, payment success, and subscription cancellations.
 - **System Health**: Endpoint to check the system's status.
