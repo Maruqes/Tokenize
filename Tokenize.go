@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Maruqes/Tokenize/database"
@@ -149,6 +150,38 @@ func validateUserInfoToActivate(customer_id string) (database.User, error) {
 	return usr, nil
 }
 
+func getFixedBillingCycleAnchor(month int, day int) int64 {
+
+	now := time.Now()
+	year := now.Year()
+	if now.Month() > time.Month(month) || (now.Month() == time.Month(month) && now.Day() > day) {
+		year++ // Caso já tenhamos passado a data fixa deste ano, avança para o próximo ano
+	}
+	fixedDate := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	return fixedDate.Unix()
+}
+
+func getFixedBillingFromENV() int64 {
+	billing := os.Getenv("STARTING_DATE")
+	day := strings.Split(billing, "/")[0]
+	month := strings.Split(billing, "/")[1]
+
+	dayInt, err := strconv.Atoi(day)
+	if err != nil {
+		log.Fatal("Invalid billing date")
+	}
+	monthInt, err := strconv.Atoi(month)
+	if err != nil {
+		log.Fatal("Invalid billing date")
+	}
+
+	if dayInt < 1 || dayInt > 31 || monthInt < 1 || monthInt > 12 {
+		return 0
+	}
+
+	return getFixedBillingCycleAnchor(monthInt, dayInt)
+}
+
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
@@ -205,10 +238,20 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 				Quantity: stripe.Int64(1),
 			},
 		},
+		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
+			BillingCycleAnchor: stripe.Int64(getFixedBillingFromENV()), // Função personalizada para calcular o timestamp
+		},
+
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
 	}
 
+	if getFixedBillingFromENV() == 0 {
+		checkoutParams.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
+			BillingCycleAnchor: nil,
+		}
+	}
+	
 	s, err := session.New(checkoutParams)
 	if err != nil {
 		log.Printf("session.New: %v", err)
@@ -537,7 +580,8 @@ func Init(port string, success string, cancel string) {
 		os.Getenv("DOMAIN") == "" ||
 		os.Getenv("LOGS_FILE") == "" ||
 		os.Getenv("SECRET_ADMIN") == "" ||
-		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS") == "" {
+		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS") == "" ||
+		os.Getenv("STARTING_DATE") == "" {
 		log.Fatal("Missing env variables")
 	}
 
@@ -560,7 +604,7 @@ func Init(port string, success string, cancel string) {
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
-	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao

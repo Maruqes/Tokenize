@@ -78,6 +78,9 @@ Your logs file path key example -> "logs.txt"
 - **"NUMBER_OF_SUBSCRIPTIONS_MONTHS"**
 The number of months your subscription is -> "12"
 
+- **"STARTING_DATE"**
+If you want the subscription to start on a specific day, "0/0" if you want a normal one -> "12/20"
+
 
 
 ## Setup Instructions
