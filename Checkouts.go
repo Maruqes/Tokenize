@@ -143,6 +143,8 @@ func getFixedBillingFromENV() int64 {
 	return getFixedBillingCycleAnchor(monthInt, dayInt)
 }
 
+var pagamentos_map = map[string]string{}
+
 func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 
 	login := CheckToken(r)
@@ -189,6 +191,8 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error fetching price: %v", err)
 	}
 
+	uuid := generateUUID()
+
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer:           stripe.String(finalCustomer.ID),
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),                     // Métodos de pagamento permitidos
@@ -211,7 +215,7 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 			Metadata: map[string]string{
 				"purpose":  "Initial Subscription Payment",
 				"user_id":  strconv.Itoa(customerIDInt),
-				"order_id": generateUUID(),
+				"order_id": uuid,
 			},
 		},
 
@@ -228,6 +232,9 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 	// URL para redirecionar o utilizador
 	fmt.Printf("Redireciona o utilizador para: %s\n", session.URL)
 	http.Redirect(w, r, session.URL, http.StatusSeeOther)
+	log.Println("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+	logMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+	pagamentos_map[uuid] = customer_id
 
 }
 

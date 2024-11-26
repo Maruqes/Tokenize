@@ -40,3 +40,76 @@
 2024-11-26 11:50:24 Login attempt with email user132@gmail.com
 2024-11-26 11:50:25 User logged in with id/name 3/user132
 2024-11-26 11:50:47 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 15:19:29 Logs initialized
+2024-11-26 15:19:39 Login attempt with email user132@gmail.com
+2024-11-26 15:19:41 User logged in with id/name 3/user132
+2024-11-26 15:19:44 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 15:20:02 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 15:22:42 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 15:23:32 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 15:23:54 Logs initialized
+2024-11-26 15:24:08 Login attempt with email user132@gmail.com
+2024-11-26 15:24:10 User logged in with id/name 3/user132
+2024-11-26 15:24:12 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 15:24:25 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 15:24:25 Payment succeeded for user 3
+2024-11-26 15:27:42 Logs initialized
+2024-11-26 15:27:45 Login attempt with email user132@gmail.com
+2024-11-26 15:27:47 User logged in with id/name 3/user132
+2024-11-26 15:27:55 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 15:28:08 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 15:28:08 Payment succeeded for user 3
+2024-11-26 15:28:08 Subscrição agendada com sucesso! ID: sub_sched_1QPQgOG3QQtRYyDS9bmEww5o
+2024-11-26 19:33:29 Logs initialized
+2024-11-26 19:34:00 Login attempt with email user132@gmail.com
+2024-11-26 19:34:02 User logged in with id/name 3/user132
+2024-11-26 19:34:11 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 19:34:29 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 19:34:29 Payment succeeded for user 3
+2024-11-26 19:34:29 Error creating subscription schedule: {"status":400,"message":"The `trial_end` `1765345726` must be within `start_date` `1733788800` and `end_date` `1765324800` for phase 0.","request_id":"req_thPVjYywAqmMFz","request_log_url":"https://dashboard.stripe.com/test/logs/req_thPVjYywAqmMFz?t=1732649669","type":"invalid_request_error"}
+2024-11-26 19:37:40 Logs initialized
+2024-11-26 19:37:42 Login attempt with email user132@gmail.com
+2024-11-26 19:37:44 User logged in with id/name 3/user132
+2024-11-26 19:37:52 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 19:38:15 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 19:38:15 Payment succeeded for user 3
+2024-11-26 19:38:15 Subscrição agendada com sucesso! ID: sub_sched_1QPUaRG3QQtRYyDSJPx1YUNr
+2024-11-26 19:46:50 Logs initialized
+2024-11-26 19:46:53 Login attempt with email user132@gmail.com
+2024-11-26 19:46:54 User logged in with id/name 3/user132
+2024-11-26 19:47:03 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 19:47:17 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 19:47:17 Payment succeeded for user 3
+2024-11-26 19:47:17 Subscrição agendada com sucesso! ID: sub_sched_1QPUjBG3QQtRYyDS2ejDFl7Z
+2024-11-26 20:05:56 Logs initialized
+2024-11-26 20:05:56 Login attempt with email user132@gmail.com
+2024-11-26 20:05:58 User logged in with id/name 3/user132
+2024-11-26 20:06:00 Login attempt with email user132@gmail.com
+2024-11-26 20:06:02 User logged in with id/name 3/user132
+2024-11-26 20:06:09 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 20:06:24 Charge succeeded for cus_RI5AMxS9dyPLHS
+2024-11-26 20:06:24 Payment succeeded for user 3
+2024-11-26 20:06:24 Subscrição agendada com sucesso! ID: sub_sched_1QPV1gG3QQtRYyDS8xgquiUP
+2024-11-26 20:07:09 Subscription in stripe created for cus_RI5AMxS9dyPLHS
+2024-11-26 20:11:16 Logs initialized
+2024-11-26 20:11:28 Logs initialized
+2024-11-26 20:11:31 Login attempt with email user132@gmail.com
+2024-11-26 20:11:32 User logged in with id/name 3/user132
+2024-11-26 20:11:40 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 20:12:05 Charge succeeded for cus_RI5Gb2mC0sPqYn
+2024-11-26 20:12:05 Payment succeeded for user 3
+2024-11-26 20:12:05 Subscrição agendada com sucesso! ID: sub_sched_1QPV7BG3QQtRYyDSmLWNG0K7
+2024-11-26 20:12:40 Subscription in stripe created for cus_RI5Gb2mC0sPqYn
+2024-11-26 20:12:40 Invoice created for cus_RI5Gb2mC0sPqYn
+2024-11-26 20:12:43 Invoice payment succeeded for cus_RI5Gb2mC0sPqYn
+2024-11-26 20:21:39 Logs initialized
+2024-11-26 20:21:47 Login attempt with email user132@gmail.com
+2024-11-26 20:21:49 User logged in with id/name 3/user132
+2024-11-26 20:22:06 Payment to create subscription created for user user132 with id 3 and email user132@gmail.com
+2024-11-26 20:22:55 Charge succeeded for cus_RI5Qdb2j8eSNjg
+2024-11-26 20:22:55 Payment succeeded for user 3
+2024-11-26 20:22:55 Subscrição agendada com sucesso! ID: sub_sched_1QPVHfG3QQtRYyDS9OszHnkq
+2024-11-26 20:23:33 Subscription in stripe created for cus_RI5Qdb2j8eSNjg
+2024-11-26 20:23:33 Invoice payment succeeded for cus_RI5Qdb2j8eSNjg
+2024-11-26 20:23:36 Invoice payment succeeded for cus_RI5Qdb2j8eSNjg
+2024-11-26 20:24:11 Invoice payment succeeded for cus_RI5Qdb2j8eSNjg
