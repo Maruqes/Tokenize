@@ -21,6 +21,7 @@ func handleSubscriptionDeleted(subscription stripe.Subscription) {
 
 func handlePaymentSuccess(invoice stripe.Invoice) error {
 
+
 	subscriptionID := ""
 	for _, line := range invoice.Lines.Data {
 		if line.Price.ID == os.Getenv("SUBSCRIPTION_PRICE_ID") {

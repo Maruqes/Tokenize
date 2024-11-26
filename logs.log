@@ -1,0 +1,42 @@
+2024-11-26 11:10:39 Logs initialized
+2024-11-26 11:10:53 Create user attempt with email user132@user132.com and username user132
+2024-11-26 11:11:08 Create user attempt with email user132@gmail.com and username user132
+2024-11-26 11:11:17 Create user attempt with email user132@gmail.com and username user132
+2024-11-26 11:11:57 Logs initialized
+2024-11-26 11:12:06 Create user attempt with email user132@gmail.com and username user132
+2024-11-26 11:12:08 User created with id/name 1/user132
+2024-11-26 11:12:15 Login attempt with email user132@gmail.com
+2024-11-26 11:12:16 User logged in with id/name 1/user132
+2024-11-26 11:12:24 Customer in stripe created for cus_RHwaROzrLcGqXD
+2024-11-26 11:13:24 Logs initialized
+2024-11-26 11:13:26 Login attempt with email user132@gmail.com
+2024-11-26 11:13:28 User logged in with id/name 1/user132
+2024-11-26 11:13:32 Checkout session created for user user132 with id 1 and email user132@gmail.com
+2024-11-26 11:14:24 Invoice payment succeeded for cus_RHwaROzrLcGqXD
+2024-11-26 11:14:24 Subscription in stripe created for cus_RHwaROzrLcGqXD
+2024-11-26 11:35:09 Logs initialized
+2024-11-26 11:36:02 Logs initialized
+2024-11-26 11:36:34 Logs initialized
+2024-11-26 11:36:47 Login attempt with email user132@gmail.com
+2024-11-26 11:36:51 Create user attempt with email user132@gmail.com and username user132
+2024-11-26 11:36:53 User created with id/name 2/user132
+2024-11-26 11:36:55 Login attempt with email user132@gmail.com
+2024-11-26 11:36:57 User logged in with id/name 2/user132
+2024-11-26 11:37:00 Customer in stripe created for cus_RHwymrloh46eqC
+2024-11-26 11:38:54 Logs initialized
+2024-11-26 11:38:56 Login attempt with email user132@gmail.com
+2024-11-26 11:38:58 User logged in with id/name 2/user132
+2024-11-26 11:43:07 Logs initialized
+2024-11-26 11:43:13 Create user attempt with email user132@gmail.com and username user132
+2024-11-26 11:43:15 User created with id/name 3/user132
+2024-11-26 11:43:18 Login attempt with email user132@gmail.com
+2024-11-26 11:43:20 User logged in with id/name 3/user132
+2024-11-26 11:43:23 Customer in stripe created for cus_RHx5CdKy0KQQE1
+2024-11-26 11:47:46 Logs initialized
+2024-11-26 11:47:53 Login attempt with email user132@gmail.com
+2024-11-26 11:47:54 User logged in with id/name 3/user132
+2024-11-26 11:48:10 Charge succeeded for cus_RHx5CdKy0KQQE1
+2024-11-26 11:50:21 Logs initialized
+2024-11-26 11:50:24 Login attempt with email user132@gmail.com
+2024-11-26 11:50:25 User logged in with id/name 3/user132
+2024-11-26 11:50:47 Charge succeeded for cus_RHx5CdKy0KQQE1
