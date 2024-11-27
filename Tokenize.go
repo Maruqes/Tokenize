@@ -318,8 +318,23 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+type TypeOfSubscription string
+
+// Agrupa os valores do enum num struct
+var TypeOfSubscriptionValues = struct {
+	Normal                        TypeOfSubscription
+	OnlyStartOnDayX               TypeOfSubscription
+	OnlyStartOnDayXNoSubscription TypeOfSubscription
+}{
+	Normal:                        "Normal",
+	OnlyStartOnDayX:               "OnlyStartOnDayX",
+	OnlyStartOnDayXNoSubscription: "OnlyStartOnDayXNoSubscription",
+}
+
+var GLOBAL_TYPE_OF_SUBSCRIPTION = TypeOfSubscriptionValues.Normal
+
 // set port like "4242"
-func Init(port string, success string, cancel string) {
+func Init(port string, success string, cancel string, typeOfSubscription TypeOfSubscription) {
 
 	success_path = success
 	cancel_path = cancel
@@ -361,9 +376,24 @@ func Init(port string, success string, cancel string) {
 
 	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
-	http.HandleFunc("/test2", paymentToCreateSubscription)             //subscricao
-	http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
-	http.HandleFunc("/create-portal-session", createPortalSession)     //para checkar info da subscricao
+	if typeOfSubscription == TypeOfSubscriptionValues.Normal {
+
+		http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
+
+	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX {
+
+		http.HandleFunc("/create-checkout-session", paymentToCreateSubscriptionXDay) //subscricao
+
+	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+
+		http.HandleFunc("/create-checkout-session", paymentToCreateSubscriptionXDay) //subscricao
+
+	} else {
+		log.Fatal("Invalid type of subscription")
+	}
+	GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
+
+	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
 
 	//testing

@@ -150,7 +150,7 @@ type PrePayment struct {
 
 var pagamentos_map = map[string]PrePayment{}
 
-func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
+func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 	login := CheckToken(r)
 	if !login {
@@ -264,6 +264,45 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 	pagamentos_map[uuid] = prePayment
 }
 
+func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessionParams {
+	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+		panic("This function should not be called with this type of subscription")
+	}
+
+	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayX {
+		return &stripe.CheckoutSessionParams{
+			Customer: stripe.String(finalCustomer.ID),
+			Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+			LineItems: []*stripe.CheckoutSessionLineItemParams{
+				{
+					Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")),
+					Quantity: stripe.Int64(1),
+				},
+			},
+			SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
+				BillingCycleAnchor: stripe.Int64(getFixedBillingFromENV()), // Função personalizada para calcular o timestamp
+			},
+
+			SuccessURL: stripe.String(domain + success_path),
+			CancelURL:  stripe.String(domain + cancel_path),
+		}
+	}
+	
+	return &stripe.CheckoutSessionParams{
+		Customer: stripe.String(finalCustomer.ID),
+		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")),
+				Quantity: stripe.Int64(1),
+			},
+		},
+
+		SuccessURL: stripe.String(domain + success_path),
+		CancelURL:  stripe.String(domain + cancel_path),
+	}
+}
+
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
@@ -311,22 +350,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Configurar sessão de checkout com o cliente criado
-	checkoutParams := &stripe.CheckoutSessionParams{
-		Customer: stripe.String(finalCustomer.ID),
-		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")),
-				Quantity: stripe.Int64(1),
-			},
-		},
-		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
-			BillingCycleAnchor: stripe.Int64(getFixedBillingFromENV()), // Função personalizada para calcular o timestamp
-		},
-
-		SuccessURL: stripe.String(domain + success_path),
-		CancelURL:  stripe.String(domain + cancel_path),
-	}
+	checkoutParams := createCheckoutStruct(finalCustomer)
 
 	if getFixedBillingFromENV() == 0 {
 		checkoutParams.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
