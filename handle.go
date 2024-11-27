@@ -138,7 +138,7 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 
 	userConfirm := pagamentos_map[orderID]
 
-	if userConfirm != userID {
+	if userConfirm.custumerID != userID {
 		log.Printf("User not found in map")
 		return fmt.Errorf("user not found in map")
 	}

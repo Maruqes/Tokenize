@@ -143,7 +143,12 @@ func getFixedBillingFromENV() int64 {
 	return getFixedBillingCycleAnchor(monthInt, dayInt)
 }
 
-var pagamentos_map = map[string]string{}
+type PrePayment struct {
+	custumerID string
+	date       time.Time
+}
+
+var pagamentos_map = map[string]PrePayment{}
 
 func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 
@@ -193,6 +198,24 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 
 	uuid := generateUUID()
 
+	month_day := os.Getenv("STARTING_DATE")
+	monthStr := strings.Split(month_day, "/")[1]
+	dayStr := strings.Split(month_day, "/")[0]
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil {
+		log.Fatalf("Invalid month: %v", err)
+	}
+	day, err := strconv.Atoi(dayStr)
+	if err != nil {
+		log.Fatalf("Invalid day: %v", err)
+	}
+
+	starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	if time.Now().After(starting_date) {
+		starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	}
+
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer:           stripe.String(finalCustomer.ID),
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),                     // Métodos de pagamento permitidos
@@ -202,7 +225,7 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Pagamento inicial para subscrição"), // Nome visível na página
+						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no dia " + starting_date.Format("02/01/2006")),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
@@ -234,8 +257,11 @@ func paymentToCreateSubscription(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, session.URL, http.StatusSeeOther)
 	log.Println("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
 	logMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
-	pagamentos_map[uuid] = customer_id
 
+	prePayment := PrePayment{
+		custumerID: customer_id,
+		date:       time.Now()}
+	pagamentos_map[uuid] = prePayment
 }
 
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {

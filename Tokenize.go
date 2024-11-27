@@ -123,95 +123,20 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	// Unmarshal the event data into an appropriate struct depending on its Type
 	switch event.Type {
 	case "customer.subscription.deleted":
-		var subscription stripe.Subscription
-		err := json.Unmarshal(event.Data.Raw, &subscription)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Subscription deleted for %s.", subscription.ID)
-		handleSubscriptionDeleted(subscription)
+		custumer_subscription_deleted(w, event)
 	case "customer.subscription.created":
-		var subscription stripe.Subscription
-		err := json.Unmarshal(event.Data.Raw, &subscription)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Subscription created for %s.", subscription.ID)
-		logMessage("Subscription in stripe created for " + subscription.Customer.ID)
+		customer_subscription_created(w, event)
 	case "customer.created":
-		var our_customer stripe.Customer
-		err := json.Unmarshal(event.Data.Raw, &our_customer)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		log.Printf("Customer created for %s with email %s  ID:%s.", our_customer.Name, our_customer.Email, our_customer.ID)
-		logMessage("Customer in stripe created for " + our_customer.ID)
+		customer_created(w, event)
 	case "invoice.payment_succeeded":
-		//caso pagamento de subscricao normal, pagou tem direito
-		var invoice stripe.Invoice
-		err := json.Unmarshal(event.Data.Raw, &invoice)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Invoice payment succeeded for %s.", invoice.ID)
-		logMessage("Invoice payment succeeded for " + invoice.Customer.ID)
-		err = handlePaymentSuccess(invoice)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		invoice_payment_succeeded(w, event)
 	case "charge.succeeded":
-		var charge stripe.Charge
-		err := json.Unmarshal(event.Data.Raw, &charge)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Charge succeeded for %s.", charge.ID)
-		logMessage("Charge succeeded for " + charge.Customer.ID)
-		purpose := charge.Metadata["purpose"]
-		userID := charge.Metadata["user_id"]
-		orderID := charge.Metadata["order_id"]
-
-		if purpose == "Initial Subscription Payment" {
-			//criar subscricao
-			if err := handleInitialSubscriptionPayment(charge); err != nil {
-				fmt.Fprintf(os.Stderr, "Error handling initial subscription payment: %v\n", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-		log.Printf("Charge succeeded for %s (Purpose: %s, UserID: %s, OrderID: %s).", charge.ID, purpose, userID, orderID)
+		charge_succeeded(w, event)
 	case "invoice.created":
-		//caso pagamento de subscricao normal, pagou tem direito
-		var invoice stripe.Invoice
-		err := json.Unmarshal(event.Data.Raw, &invoice)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		log.Printf("Invoice payment succeeded for %s.", invoice.ID)
-		logMessage("Invoice payment succeeded for " + invoice.Customer.ID)
-		err = handlePaymentSuccess(invoice)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		invoice_created(w, event)
 	default:
-		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
+		fmt.Fprintf(os.Stderr, "Unhandled event type: %s", event.Type)
+		logMessage("Unhandled event type: " + string(event.Type))
 	}
 	w.WriteHeader(http.StatusOK)
 }
