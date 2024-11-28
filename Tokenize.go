@@ -382,7 +382,7 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 
 	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX {
 
-		http.HandleFunc("/create-checkout-session", paymentToCreateSubscriptionXDay) //subscricao
+		http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 
 	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
 
@@ -392,6 +392,9 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 		log.Fatal("Invalid type of subscription")
 	}
 	GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
+
+	http.HandleFunc("/test2", test2) //subscricao
+
 
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)

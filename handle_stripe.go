@@ -87,6 +87,11 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+	} else if purpose == "Initial Subscription Payment Start Today" {
+		//criar uma subscricao comecando hoje
+	} else {
+		log.Println("Purpose not found")
+		logMessage("Purpose not found")
 	}
 	log.Printf("Charge succeeded for %s (Purpose: %s, UserID: %s, OrderID: %s).", charge.ID, purpose, userID, orderID)
 
