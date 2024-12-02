@@ -2,9 +2,11 @@ package Tokenize
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/Maruqes/Tokenize/database"
 )
@@ -14,9 +16,39 @@ type Login struct {
 	Token  string
 }
 
-var logins = map[int]Login{}
+type LoginStore struct {
+	sync.RWMutex
+	logins map[int]Login
+}
 
 const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+func NewLoginStore() *LoginStore {
+	return &LoginStore{
+		logins: make(map[int]Login),
+	}
+}
+
+var loginStore = NewLoginStore()
+
+func (s *LoginStore) Add(login Login) {
+	s.Lock()
+	defer s.Unlock()
+	s.logins[login.UserID] = login
+}
+
+func (s *LoginStore) Get(userID int) (Login, bool) {
+	s.RLock()
+	defer s.RUnlock()
+	login, ok := s.logins[userID]
+	return login, ok
+}
+
+func (s *LoginStore) Delete(userID int) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.logins, userID)
+}
 
 func generateSecureToken(length int) (string, error) {
 	token := make([]byte, length)
@@ -39,7 +71,7 @@ func loginUser(email, password string) (string, database.User, error) {
 
 	login := database.CheckUserPassword(usr.ID, password)
 	if !login {
-		return "", usr, nil
+		return "", usr, fmt.Errorf("invalid password or user")
 	}
 
 	token, err := generateSecureToken(64)
@@ -47,15 +79,15 @@ func loginUser(email, password string) (string, database.User, error) {
 		return "", usr, err
 	}
 
-	logins[usr.ID] = Login{
+	loginStore.Add(Login{
 		UserID: usr.ID,
 		Token:  token,
-	}
+	})
 	return token, usr, nil
 }
 
 func logoutUser(userID int) {
-	delete(logins, userID)
+	loginStore.Delete(userID)
 }
 
 func CheckToken(r *http.Request) bool {
@@ -75,12 +107,10 @@ func CheckToken(r *http.Request) bool {
 	token := cookie.Value
 
 	//check if token is valid
-	login, ok := logins[id]
-	if !ok {
+	login, ok := loginStore.Get(id)
+	if !ok || login.Token != token {
 		return false
 	}
-	if login.Token != token {
-		return false
-	}
+
 	return true
 }

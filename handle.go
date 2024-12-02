@@ -12,6 +12,8 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v81/customer"
+	"github.com/stripe/stripe-go/v81/paymentintent"
 	"github.com/stripe/stripe-go/v81/subscriptionschedule"
 )
 
@@ -156,6 +158,12 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 		log.Printf("Error getting user: %v", err)
 	}
 
+	err = definePaymentMethod(db_user.StripeID, charge.PaymentIntent.ID)
+	if err != nil {
+		log.Printf("Erro ao definir o método de pagamento padrão: %v", err)
+		return err
+	}
+
 	scheduleParams := &stripe.SubscriptionScheduleParams{
 		Customer:  stripe.String(db_user.StripeID),
 		StartDate: stripe.Int64(getFixedBillingFromENV()), // Future start date in UNIX timestamp
@@ -178,6 +186,143 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 		return err
 	}
+	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+
+	return nil
+}
+
+func firstSubscriptionMoure(userid string) (*stripe.SubscriptionSchedule, error) {
+	scheduleParams := &stripe.SubscriptionScheduleParams{
+		Customer:  stripe.String(userid),
+		StartDate: stripe.Int64(time.Now().Unix()),
+		Phases: []*stripe.SubscriptionSchedulePhaseParams{
+			{
+				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
+					{
+						Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")), // Subscription price ID
+						Quantity: stripe.Int64(1),
+					},
+				},
+				TrialEnd: stripe.Int64(getFixedBillingFromENV()),
+				EndDate:  stripe.Int64(getFixedBillingFromENV()),
+			},
+		},
+		EndBehavior: stripe.String("cancel"),
+	}
+	schedule, err := subscriptionschedule.New(scheduleParams)
+	if err != nil {
+		log.Printf("Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return nil, err
+	}
+	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+	return schedule, nil
+}
+
+func secondSubscriptionMoure(userid string) (*stripe.SubscriptionSchedule, error) {
+
+	scheduleParams := &stripe.SubscriptionScheduleParams{
+		Customer:  stripe.String(userid),
+		StartDate: stripe.Int64(getFixedBillingFromENV()), // Future start date in UNIX timestamp
+		Phases: []*stripe.SubscriptionSchedulePhaseParams{
+			{
+				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
+					{
+						Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")), // Subscription price ID
+						Quantity: stripe.Int64(1),
+					},
+				},
+			},
+		},
+	}
+	schedule, err := subscriptionschedule.New(scheduleParams)
+	if err != nil {
+		log.Printf("Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return nil, err
+	}
+	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+	return schedule, nil
+}
+
+func definePaymentMethod(customerID string, paymentIntentID string) error {
+	paymentIntent, err := paymentintent.Get(paymentIntentID, nil)
+	if err != nil {
+		log.Printf("Erro ao obter o PaymentIntent: %v", err)
+		return err
+	}
+
+	lastPaymentMethodID := paymentIntent.PaymentMethod.ID
+
+	customerUpdateParams := &stripe.CustomerParams{
+		InvoiceSettings: &stripe.CustomerInvoiceSettingsParams{
+			DefaultPaymentMethod: stripe.String(lastPaymentMethodID),
+		},
+	}
+	_, err = customer.Update(customerID, customerUpdateParams)
+	if err != nil {
+		log.Printf("Erro ao definir o método de pagamento padrão: %v", err)
+		return err
+	}
+	return nil
+}
+
+func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
+	purpose := charge.Metadata["purpose"]
+	userID := charge.Metadata["user_id"]
+	orderID := charge.Metadata["order_id"]
+
+	if purpose == "" || userID == "" || orderID == "" {
+		log.Printf("Missing metadata in charge %s", charge.ID)
+		return fmt.Errorf("missing metadata in charge %s", charge.ID)
+	}
+
+	userConfirm := pagamentos_map[orderID]
+
+	if userConfirm.custumerID != userID {
+		log.Printf("User not found in map")
+		return fmt.Errorf("user not found in map")
+	}
+
+	log.Println("Payment succeeded for user", userID)
+	logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
+
+	userIDInt, err := strconv.Atoi(userID)
+	if err != nil {
+		log.Printf("Error converting userID to int: %v", err)
+		return err
+	}
+	db_user, err := database.GetUser(userIDInt)
+	if err != nil {
+		log.Printf("Error getting user: %v", err)
+		return err
+	}
+
+	err = definePaymentMethod(db_user.StripeID, charge.PaymentIntent.ID)
+	if err != nil {
+		log.Printf("Erro ao definir o método de pagamento padrão: %v", err)
+		return err
+	}
+
+	schedule, err := firstSubscriptionMoure(db_user.StripeID)
+	if err != nil {
+		log.Printf("Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return err
+	}
+	fmt.Printf("First Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+
+	schedule, err = secondSubscriptionMoure(db_user.StripeID)
+	if err != nil {
+		log.Printf("Second Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return err
+	}
+
 	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
 	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
 

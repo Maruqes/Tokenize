@@ -152,6 +152,11 @@ var pagamentos_map = map[string]PrePayment{}
 
 func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
 	login := CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
@@ -193,7 +198,8 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 	p, err := price.Get(os.Getenv("SUBSCRIPTION_PRICE_ID"), nil)
 	if err != nil {
-		log.Fatalf("Error fetching price: %v", err)
+		http.Error(w, "Failed to get price", http.StatusInternalServerError)
+		return
 	}
 
 	uuid := generateUUID()
@@ -204,11 +210,13 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 	month, err := strconv.Atoi(monthStr)
 	if err != nil {
-		log.Fatalf("Invalid month: %v", err)
+		http.Error(w, "Invalid month", http.StatusBadRequest)
+		return
 	}
 	day, err := strconv.Atoi(dayStr)
 	if err != nil {
-		log.Fatalf("Invalid day: %v", err)
+		http.Error(w, "Invalid day", http.StatusBadRequest)
+		return
 	}
 
 	starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
@@ -249,7 +257,8 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 	// Cria a Checkout Session
 	session, err := session.New(checkoutParams)
 	if err != nil {
-		log.Fatalf("Erro ao criar Checkout Session: %v", err)
+		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
+		return
 	}
 
 	// URL para redirecionar o utilizador
@@ -370,11 +379,71 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, s.URL, http.StatusSeeOther)
 }
 
-func test2(w http.ResponseWriter, r *http.Request) {
-	// if r.Method != "POST" {
-	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	// 	return
-	// }
+func checkMourosDate() bool {
+	mourosStartDate := os.Getenv("MOUROS_STARTING_DATE")
+	mourosEndDate := os.Getenv("MOUROS_ENDING_DATE")
+
+	if mourosStartDate == "" || mourosEndDate == "" {
+		return false
+	}
+
+	// Parse the dates in day/month format
+	startingDateParts := strings.Split(mourosStartDate, "/")
+	endingDateParts := strings.Split(mourosEndDate, "/")
+
+	if len(startingDateParts) != 2 || len(endingDateParts) != 2 {
+		return false
+	}
+
+	startingDay, err := strconv.Atoi(startingDateParts[0])
+	if err != nil {
+		return false
+	}
+	startingMonth, err := strconv.Atoi(startingDateParts[1])
+	if err != nil {
+		return false
+	}
+
+	endingDay, err := strconv.Atoi(endingDateParts[0])
+	if err != nil {
+		return false
+	}
+	endingMonth, err := strconv.Atoi(endingDateParts[1])
+	if err != nil {
+		return false
+	}
+
+	now := time.Now()
+	startingDate := time.Date(now.Year(), time.Month(startingMonth), startingDay, 0, 0, 0, 0, time.UTC)
+	endingDate := time.Date(now.Year(), time.Month(endingMonth), endingDay, 23, 59, 59, 0, time.UTC)
+
+	if now.After(startingDate) && now.Before(endingDate) {
+		return true
+	}
+
+	return false
+}
+
+func mourosSubscription(w http.ResponseWriter, r *http.Request) {
+
+	if checkMourosDate() {
+		log.Println("Mouros subscription")
+		log.Println("Mouros subscription")
+		log.Println("Mouros subscription")
+		log.Println("Mouros subscription")
+		createCheckoutSession(w, r)
+		return
+	}
+
+	log.Println("Not mouros subscription")
+	log.Println("Not mouros subscription")
+	log.Println("Not mouros subscription")
+	log.Println("Not mouros subscription")
+
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
 
 	login := CheckToken(r)
 	if !login {
@@ -417,7 +486,8 @@ func test2(w http.ResponseWriter, r *http.Request) {
 
 	p, err := price.Get(os.Getenv("SUBSCRIPTION_PRICE_ID"), nil)
 	if err != nil {
-		log.Fatalf("Error fetching price: %v", err)
+		http.Error(w, "Failed to get price", http.StatusInternalServerError)
+		return
 	}
 
 	uuid := generateUUID()
@@ -455,7 +525,8 @@ func test2(w http.ResponseWriter, r *http.Request) {
 	// Cria a Checkout Session
 	session, err := session.New(checkoutParams)
 	if err != nil {
-		log.Fatalf("Erro ao criar Checkout Session: %v", err)
+		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
+		return
 	}
 
 	// URL para redirecionar o utilizador

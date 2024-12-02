@@ -88,7 +88,11 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 			return
 		}
 	} else if purpose == "Initial Subscription Payment Start Today" {
-		//criar uma subscricao comecando hoje
+		if err := handleInitialSubscriptionPaymentStartToday(charge); err != nil {
+			fmt.Fprintf(os.Stderr, "Error handling initial subscription payment: %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	} else {
 		log.Println("Purpose not found")
 		logMessage("Purpose not found")

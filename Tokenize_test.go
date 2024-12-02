@@ -7,7 +7,7 @@ import (
 )
 
 func TestThis(t *testing.T) {
-	Init("4242", "/success.html", "/cancel.html", TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription)
+	Init("4242", "/success.html", "/cancel.html", TypeOfSubscriptionValues.MourosSubscription)
 }
 
 var perms = permissions{}

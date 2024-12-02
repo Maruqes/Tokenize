@@ -88,7 +88,12 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 		Customer:  stripe.String(usr.StripeID),
 		ReturnURL: stripe.String(domain),
 	}
-	ps, _ := portalsession.New(params)
+	ps, err := portalsession.New(params)
+	if err != nil {
+		log.Printf("Error creating portal session: %v", err)
+		http.Error(w, "Failed to create portal session", http.StatusInternalServerError)
+		return
+	}
 	log.Printf("ps.New: %v", ps.URL)
 	logMessage("Portal session created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
 	http.Redirect(w, r, ps.URL, http.StatusSeeOther)
@@ -165,12 +170,18 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Password)
+	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Email)
 
 	logMessage("Create user attempt with email " + credentials.Email + " and username " + credentials.Username)
 
 	if credentials.Username == "" || credentials.Password == "" || credentials.Email == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	isValidEmailTest := isValidEmail(credentials.Email)
+	if !isValidEmailTest {
+		http.Error(w, "Invalid email", http.StatusBadRequest)
 		return
 	}
 
@@ -217,6 +228,12 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isValidEmailTest := isValidEmail(credentials.Email)
+	if !isValidEmailTest {
+		http.Error(w, "Invalid email", http.StatusBadRequest)
+		return
+	}
+
 	token, usr, err := loginUser(credentials.Email, credentials.Password)
 	if err != nil || token == "" {
 		http.Error(w, "Failed to login", http.StatusInternalServerError)
@@ -237,6 +254,7 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(5 * 24 * time.Hour),
 	})
 
@@ -325,10 +343,12 @@ var TypeOfSubscriptionValues = struct {
 	Normal                        TypeOfSubscription
 	OnlyStartOnDayX               TypeOfSubscription
 	OnlyStartOnDayXNoSubscription TypeOfSubscription
+	MourosSubscription            TypeOfSubscription
 }{
 	Normal:                        "Normal",
 	OnlyStartOnDayX:               "OnlyStartOnDayX",
 	OnlyStartOnDayXNoSubscription: "OnlyStartOnDayXNoSubscription",
+	MourosSubscription:            "MourosSubscription",
 }
 
 var GLOBAL_TYPE_OF_SUBSCRIPTION = TypeOfSubscriptionValues.Normal
@@ -351,7 +371,9 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 		os.Getenv("LOGS_FILE") == "" ||
 		os.Getenv("SECRET_ADMIN") == "" ||
 		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS") == "" ||
-		os.Getenv("STARTING_DATE") == "" {
+		os.Getenv("STARTING_DATE") == "" ||
+		os.Getenv("MOUROS_STARTING_DATE") == "" ||
+		os.Getenv("MOUROS_ENDING_DATE") == "" {
 		log.Fatal("Missing env variables")
 	}
 
@@ -388,13 +410,14 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 
 		http.HandleFunc("/create-checkout-session", paymentToCreateSubscriptionXDay) //subscricao
 
+	} else if typeOfSubscription == TypeOfSubscriptionValues.MourosSubscription {
+
+		http.HandleFunc("/create-checkout-session", mourosSubscription) //subscricao
+
 	} else {
 		log.Fatal("Invalid type of subscription")
 	}
 	GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
-
-	http.HandleFunc("/test2", test2) //subscricao
-
 
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)

@@ -21,7 +21,10 @@ func (*permissions) CreatePermission(name, permission string) error {
 		return fmt.Errorf("permission %s already exists", permission)
 	}
 	fmt.Println("Creating permission")
-	database.CreateNewPermission(name, permission)
+	err = database.CreateNewPermission(name, permission)
+	if err != nil {
+		return fmt.Errorf("error creating permission %s", name)
+	}
 	return nil
 }
 
@@ -31,7 +34,10 @@ func (*permissions) DeletePermission(id int) error {
 		return fmt.Errorf("permission %d does not exist", id)
 	}
 
-	database.DeletePermissionWithID(id)
+	err := database.DeletePermissionWithID(id)
+	if err != nil {
+		return fmt.Errorf("error deleting permission %d", id)
+	}
 	return nil
 }
 
