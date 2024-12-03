@@ -140,7 +140,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	case "invoice.created":
 		invoice_created(w, event)
 	default:
-		fmt.Fprintf(os.Stderr, "Unhandled event type: %s", event.Type)
+		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 		logMessage("Unhandled event type: " + string(event.Type))
 	}
 	w.WriteHeader(http.StatusOK)

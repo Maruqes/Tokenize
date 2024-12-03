@@ -138,7 +138,11 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 		return fmt.Errorf("missing metadata in charge %s", charge.ID)
 	}
 
-	userConfirm := pagamentos_map[orderID]
+	userConfirm, exists := pagamentos_map[orderID]
+	if !exists {
+		log.Printf("Order ID %s not found in map", orderID)
+		return fmt.Errorf("order ID %s not found in map", orderID)
+	}
 
 	if userConfirm.custumerID != userID {
 		log.Printf("User not found in map")
@@ -280,7 +284,11 @@ func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 		return fmt.Errorf("missing metadata in charge %s", charge.ID)
 	}
 
-	userConfirm := pagamentos_map[orderID]
+	userConfirm, exists := pagamentos_map[orderID]
+	if !exists {
+		log.Printf("Order ID %s not found in map", orderID)
+		return fmt.Errorf("order ID %s not found in map", orderID)
+	}
 
 	if userConfirm.custumerID != userID {
 		log.Printf("User not found in map")

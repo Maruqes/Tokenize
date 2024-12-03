@@ -273,6 +273,15 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 	pagamentos_map[uuid] = prePayment
 }
 
+/*
+card, acss_debit, affirm, afterpay_clearpay, alipay, au_becs_debit,
+bacs_debit, bancontact, blik, boleto, cashapp, customer_balance, eps,
+fpx, giropay, grabpay, ideal, klarna, konbini, link, multibanco, oxxo,
+p24, paynow, paypal, pix, promptpay, sepa_debit, sofort, swish, us_bank_account,
+wechat_pay, revolut_pay, mobilepay, zip, amazon_pay, alma, twint, kr_card,
+naver_pay, kakao_pay, payco, or samsung_pay"
+*/
+
 func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessionParams {
 	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
 		panic("This function should not be called with this type of subscription")
@@ -306,6 +315,11 @@ func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessio
 				Quantity: stripe.Int64(1),
 			},
 		},
+		PaymentMethodTypes: stripe.StringSlice([]string{
+			"card",    // Standard credit/debit card payment method
+			"cashapp", // MB Way payment method
+			// You can add more methods here if needed, e.g., "sepa_debit", "ideal", etc.
+		}),
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
