@@ -143,136 +143,6 @@ func getFixedBillingFromENV() int64 {
 	return getFixedBillingCycleAnchor(monthInt, dayInt)
 }
 
-type PrePayment struct {
-	custumerID string
-	date       time.Time
-}
-
-var pagamentos_map = map[string]PrePayment{}
-
-func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != "POST" {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
-
-	login := CheckToken(r)
-	if !login {
-		http.Error(w, "Not logged in", http.StatusUnauthorized)
-		return
-	}
-
-	//get id
-	customer_id_cookie, err := r.Cookie("id")
-	if err != nil {
-		http.Error(w, "Error getting id", http.StatusInternalServerError)
-		return
-	}
-	customer_id := customer_id_cookie.Value
-
-	//validate user
-	usr, err := validateUserInfoToActivate(customer_id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	//if has offline payments
-	customerIDInt, err := strconv.Atoi(customer_id)
-	if err != nil {
-		http.Error(w, "Invalid customer ID", http.StatusBadRequest)
-		return
-	}
-	if val, err := doesHaveOfflinePayments(customerIDInt); err == nil && val {
-		http.Error(w, "User has offline payments", http.StatusBadRequest)
-		return
-	}
-
-	//creates or gets the customer
-	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	p, err := price.Get(os.Getenv("SUBSCRIPTION_PRICE_ID"), nil)
-	if err != nil {
-		http.Error(w, "Failed to get price", http.StatusInternalServerError)
-		return
-	}
-
-	uuid := generateUUID()
-
-	month_day := os.Getenv("STARTING_DATE")
-	monthStr := strings.Split(month_day, "/")[1]
-	dayStr := strings.Split(month_day, "/")[0]
-
-	month, err := strconv.Atoi(monthStr)
-	if err != nil {
-		http.Error(w, "Invalid month", http.StatusBadRequest)
-		return
-	}
-	day, err := strconv.Atoi(dayStr)
-	if err != nil {
-		http.Error(w, "Invalid day", http.StatusBadRequest)
-		return
-	}
-
-	starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	if time.Now().After(starting_date) {
-		starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	}
-
-	checkoutParams := &stripe.CheckoutSessionParams{
-		Customer:           stripe.String(finalCustomer.ID),
-		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),                     // Métodos de pagamento permitidos
-		Mode:               stripe.String(string(stripe.CheckoutSessionModePayment)), // "Payment" para um único pagamento
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency: stripe.String("eur"),
-					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no dia " + starting_date.Format("02/01/2006")),
-					},
-					UnitAmount: &p.UnitAmount, // Valor em cêntimos
-				},
-				Quantity: stripe.Int64(1), // Quantidade (1 item)
-			},
-		},
-
-		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
-			SetupFutureUsage: stripe.String("off_session"),
-			Metadata: map[string]string{
-				"purpose":  "Initial Subscription Payment",
-				"user_id":  strconv.Itoa(customerIDInt),
-				"order_id": uuid,
-			},
-		},
-
-		SuccessURL: stripe.String(domain + success_path),
-		CancelURL:  stripe.String(domain + cancel_path),
-	}
-
-	// Cria a Checkout Session
-	session, err := session.New(checkoutParams)
-	if err != nil {
-		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
-		return
-	}
-
-	// URL para redirecionar o utilizador
-	fmt.Printf("Redireciona o utilizador para: %s\n", session.URL)
-	http.Redirect(w, r, session.URL, http.StatusSeeOther)
-	log.Println("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
-	logMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
-
-	prePayment := PrePayment{
-		custumerID: customer_id,
-		date:       time.Now()}
-	pagamentos_map[uuid] = prePayment
-}
-
 /*
 card, acss_debit, affirm, afterpay_clearpay, alipay, au_becs_debit,
 bacs_debit, bancontact, blik, boleto, cashapp, customer_balance, eps,
@@ -438,21 +308,144 @@ func checkMourosDate() bool {
 	return false
 }
 
-func mourosSubscription(w http.ResponseWriter, r *http.Request) {
+type PrePayment struct {
+	custumerID string
+	date       time.Time
+	type_of    string
+}
 
-	if checkMourosDate() {
-		log.Println("Mouros subscription")
-		log.Println("Mouros subscription")
-		log.Println("Mouros subscription")
-		log.Println("Mouros subscription")
-		createCheckoutSession(w, r)
+var pagamentos_map = map[string]PrePayment{}
+
+func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
 
-	log.Println("Not mouros subscription")
-	log.Println("Not mouros subscription")
-	log.Println("Not mouros subscription")
-	log.Println("Not mouros subscription")
+	login := CheckToken(r)
+	if !login {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	//get id
+	customer_id_cookie, err := r.Cookie("id")
+	if err != nil {
+		http.Error(w, "Error getting id", http.StatusInternalServerError)
+		return
+	}
+	customer_id := customer_id_cookie.Value
+
+	//validate user
+	usr, err := validateUserInfoToActivate(customer_id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//if has offline payments
+	customerIDInt, err := strconv.Atoi(customer_id)
+	if err != nil {
+		http.Error(w, "Invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	if val, err := doesHaveOfflinePayments(customerIDInt); err == nil && val {
+		http.Error(w, "User has offline payments", http.StatusBadRequest)
+		return
+	}
+
+	//creates or gets the customer
+	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	p, err := price.Get(os.Getenv("SUBSCRIPTION_PRICE_ID"), nil)
+	if err != nil {
+		http.Error(w, "Failed to get price", http.StatusInternalServerError)
+		return
+	}
+
+	uuid := generateUUID()
+
+	month_day := os.Getenv("STARTING_DATE")
+	monthStr := strings.Split(month_day, "/")[1]
+	dayStr := strings.Split(month_day, "/")[0]
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil {
+		http.Error(w, "Invalid month", http.StatusBadRequest)
+		return
+	}
+	day, err := strconv.Atoi(dayStr)
+	if err != nil {
+		http.Error(w, "Invalid day", http.StatusBadRequest)
+		return
+	}
+
+	starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	if time.Now().After(starting_date) {
+		starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	}
+
+	checkoutParams := &stripe.CheckoutSessionParams{
+		Customer:           stripe.String(finalCustomer.ID),
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),                     // Métodos de pagamento permitidos
+		Mode:               stripe.String(string(stripe.CheckoutSessionModePayment)), // "Payment" para um único pagamento
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+					Currency: stripe.String("eur"),
+					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no dia " + starting_date.Format("02/01/2006")),
+					},
+					UnitAmount: &p.UnitAmount, // Valor em cêntimos
+				},
+				Quantity: stripe.Int64(1), // Quantidade (1 item)
+			},
+		},
+
+		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
+			SetupFutureUsage: stripe.String("off_session"),
+			Metadata: map[string]string{
+				"purpose":  "Initial Subscription Payment",
+				"user_id":  strconv.Itoa(customerIDInt),
+				"order_id": uuid,
+			},
+		},
+
+		SuccessURL: stripe.String(domain + success_path),
+		CancelURL:  stripe.String(domain + cancel_path),
+	}
+
+	// Cria a Checkout Session
+	session, err := session.New(checkoutParams)
+	if err != nil {
+		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
+		return
+	}
+
+	// URL para redirecionar o utilizador
+	fmt.Printf("Redireciona o utilizador para: %s\n", session.URL)
+	http.Redirect(w, r, session.URL, http.StatusSeeOther)
+	log.Println("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+	logMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+
+	prePayment := PrePayment{
+		custumerID: customer_id,
+		date:       time.Now(),
+		type_of:    "Initial Subscription Payment"}
+	pagamentos_map[uuid] = prePayment
+}
+
+func mourosSubscription(w http.ResponseWriter, r *http.Request) {
+
+	if checkMourosDate() {
+		createCheckoutSession(w, r)
+		return
+	}
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -551,6 +544,7 @@ func mourosSubscription(w http.ResponseWriter, r *http.Request) {
 
 	prePayment := PrePayment{
 		custumerID: customer_id,
-		date:       time.Now()}
+		date:       time.Now(),
+		type_of:    "Initial Subscription Payment Start Today"}
 	pagamentos_map[uuid] = prePayment
 }

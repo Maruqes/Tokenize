@@ -27,3 +27,11 @@ func initLogs() {
 
 	logMessage("Logs initialized")
 }
+
+// this should be visible to the main package
+func PanicLog(message string) {
+	logMessage(("\n\n\nPANIC: " + message))
+	logMessage(("PANIC: " + message))
+	logMessage(("PANIC: " + message))
+	logMessage(("PANIC: " + message + "\n\n\n"))
+}

@@ -128,6 +128,7 @@ func calculateTrialEnd(startDate int64) int64 {
 	return trialEndTime.Unix()
 }
 
+// Initial Subscription Payment
 func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 	purpose := charge.Metadata["purpose"]
 	userID := charge.Metadata["user_id"]
@@ -147,6 +148,12 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 	if userConfirm.custumerID != userID {
 		log.Printf("User not found in map")
 		return fmt.Errorf("user not found in map")
+	}
+
+	if userConfirm.type_of == "Initial Subscription Payment" {
+		PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
+		fmt.Println("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
+		return fmt.Errorf("if you seeing this conect support or stop messing with the requests")
 	}
 
 	log.Println("Payment succeeded for user", userID)
@@ -193,6 +200,7 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
 	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
 
+	delete(pagamentos_map, orderID)
 	return nil
 }
 
@@ -274,6 +282,7 @@ func definePaymentMethod(customerID string, paymentIntentID string) error {
 	return nil
 }
 
+// Initial Subscription Payment Start Today
 func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 	purpose := charge.Metadata["purpose"]
 	userID := charge.Metadata["user_id"]
@@ -293,6 +302,12 @@ func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 	if userConfirm.custumerID != userID {
 		log.Printf("User not found in map")
 		return fmt.Errorf("user not found in map")
+	}
+
+	if userConfirm.type_of == "Initial Subscription Payment Start Today" {
+		PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
+		fmt.Println("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
+		return fmt.Errorf("if you seeing this conect support or stop messing with the requests")
 	}
 
 	log.Println("Payment succeeded for user", userID)
@@ -333,6 +348,9 @@ func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 
 	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
 	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+
+	//delete the order from the map
+	delete(pagamentos_map, orderID)
 
 	return nil
 }
