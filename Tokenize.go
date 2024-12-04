@@ -338,6 +338,7 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 
 type TypeOfSubscription string
 
+// these subscriptions are only available with card
 // Agrupa os valores do enum num struct
 var TypeOfSubscriptionValues = struct {
 	Normal                        TypeOfSubscription
@@ -351,30 +352,28 @@ var TypeOfSubscriptionValues = struct {
 	MourosSubscription:            "MourosSubscription",
 }
 
+// a subscription you need to pay manually for now with mbway/multibanco both portuguese payment methods
+type ExtraPayments string
+
+var ExtraPaymentsValues = struct {
+	MBWay      ExtraPayments
+	Multibanco ExtraPayments
+}{
+	MBWay:      "mbway",
+	Multibanco: "multibanco",
+}
+
 var GLOBAL_TYPE_OF_SUBSCRIPTION = TypeOfSubscriptionValues.Normal
+var GLOBAL_EXTRA_PAYMENTS = []ExtraPayments{}
 
 // set port like "4242"
-func Init(port string, success string, cancel string, typeOfSubscription TypeOfSubscription) {
+func Init(port string, success string, cancel string, typeOfSubscription TypeOfSubscription, extraPayments []ExtraPayments) {
 
 	success_path = success
 	cancel_path = cancel
 
 	if success[0] != '/' || cancel[0] != '/' {
 		panic("Success/Cancel path must start with /")
-	}
-
-	//check if env variables are set
-	if os.Getenv("SECRET_KEY") == "" ||
-		os.Getenv("ENDPOINT_SECRET") == "" ||
-		os.Getenv("SUBSCRIPTION_PRICE_ID") == "" ||
-		os.Getenv("DOMAIN") == "" ||
-		os.Getenv("LOGS_FILE") == "" ||
-		os.Getenv("SECRET_ADMIN") == "" ||
-		os.Getenv("NUMBER_OF_SUBSCRIPTIONS_MONTHS") == "" ||
-		os.Getenv("STARTING_DATE") == "" ||
-		os.Getenv("MOUROS_STARTING_DATE") == "" ||
-		os.Getenv("MOUROS_ENDING_DATE") == "" {
-		log.Fatal("Missing env variables")
 	}
 
 	port_int, err := strconv.Atoi(port)
@@ -385,6 +384,8 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 		log.Fatal("Invalid port")
 	}
 
+	checkAllEnv()
+
 	fmt.Println("Init")
 
 	database.Init()
@@ -393,6 +394,9 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 	database.CreateOfflineTable()
 
 	initLogs()
+
+	GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
+	GLOBAL_EXTRA_PAYMENTS = extraPayments
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
@@ -417,7 +421,16 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 	} else {
 		log.Fatal("Invalid type of subscription")
 	}
-	GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
+
+	for i := 0; i < len(extraPayments); i++ {
+		if extraPayments[i] == ExtraPaymentsValues.MBWay {
+			http.HandleFunc("/mbway", mbwaySubscription)
+		} else if extraPayments[i] == ExtraPaymentsValues.Multibanco {
+			http.HandleFunc("/multibanco", multibancoSubscription)
+		} else {
+			log.Fatal("Invalid extra payment")
+		}
+	}
 
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)

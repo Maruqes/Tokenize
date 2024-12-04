@@ -93,6 +93,12 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+	} else if purpose == "ExtraPayExtra" {
+		if err := handleExtraPayment(charge); err != nil {
+			fmt.Fprintf(os.Stderr, "Error handling initial subscription payment: %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	} else {
 		log.Println("Purpose not found")
 		logMessage("Purpose not found")
