@@ -3,7 +3,6 @@ package Tokenize
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -75,40 +74,6 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 		return err
 	}
 	return nil
-}
-
-func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
-	usr, err := database.GetUser(tokenizeID)
-	if err != nil {
-		return false, err
-	}
-
-	if usr.IsActive {
-		return true, nil
-	}
-
-	if val, err := doesHaveOfflinePayments(tokenizeID); err == nil && val {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func GetUserTokenizeCookies(r *http.Request) (int, string, error) {
-	cookie, err := r.Cookie("id")
-	if err != nil {
-		return 0, "", err
-	}
-	id, err := strconv.Atoi(cookie.Value)
-	if err != nil {
-		return 0, "", err
-	}
-	cookie, err = r.Cookie("token")
-	if err != nil {
-		return 0, "", err
-	}
-	token := cookie.Value
-	return id, token, nil
 }
 
 func calculateTrialEnd(startDate int64) int64 {
@@ -358,7 +323,7 @@ func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 func handleExtraMouros(userConfirm ExtraPrePayments, db_user database.User) (*stripe.SubscriptionSchedule, error) {
 	additionalYears := userConfirm.number_of_payments
 
-	if !checkMourosDate() {
+	if !checkMourosDate() || hasStartingDayPassed() {
 		additionalYears = additionalYears - 1
 	}
 
@@ -377,6 +342,75 @@ func handleExtraMouros(userConfirm ExtraPrePayments, db_user database.User) (*st
 				},
 				TrialEnd: stripe.Int64(endDate),
 				EndDate:  stripe.Int64(endDate),
+			},
+		},
+		EndBehavior: stripe.String("cancel"),
+	}
+	schedule, err := subscriptionschedule.New(scheduleParams)
+	if err != nil {
+		log.Printf("Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return nil, err
+	}
+
+	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+
+	return schedule, nil
+}
+
+func handleExtraNormal(userConfirm ExtraPrePayments, db_user database.User) (*stripe.SubscriptionSchedule, error) {
+
+	endDate := time.Unix(time.Now().Unix(), 0).AddDate(userConfirm.number_of_payments, 0, 0).Unix()
+
+	scheduleParams := &stripe.SubscriptionScheduleParams{
+		Customer:  stripe.String(db_user.StripeID),
+		StartDate: stripe.Int64(time.Now().Unix()),
+		Phases: []*stripe.SubscriptionSchedulePhaseParams{
+			{
+				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
+					{
+						Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")), // Subscription price ID
+						Quantity: stripe.Int64(int64(1) * int64(userConfirm.number_of_payments)),
+					},
+				},
+				TrialEnd: stripe.Int64(endDate),
+				EndDate:  stripe.Int64(endDate),
+			},
+		},
+		EndBehavior: stripe.String("cancel"),
+	}
+	schedule, err := subscriptionschedule.New(scheduleParams)
+	if err != nil {
+		log.Printf("Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return nil, err
+	}
+
+	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+
+	return schedule, nil
+}
+
+func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user database.User) (*stripe.SubscriptionSchedule, error) {
+
+	endDate := time.Unix(time.Now().Unix(), 0).AddDate(userConfirm.number_of_payments, 0, 0).Unix()
+
+	scheduleParams := &stripe.SubscriptionScheduleParams{
+		Customer:  stripe.String(db_user.StripeID),
+		StartDate: stripe.Int64(time.Now().Unix()),
+		Phases: []*stripe.SubscriptionSchedulePhaseParams{
+			{
+				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
+					{
+						Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")), // Subscription price ID
+						Quantity: stripe.Int64(int64(1) * int64(userConfirm.number_of_payments)),
+					},
+				},
+				StartDate: stripe.Int64(getFixedBillingFromENV()),
+				TrialEnd:  stripe.Int64(endDate),
+				EndDate:   stripe.Int64(endDate),
 			},
 		},
 		EndBehavior: stripe.String("cancel"),
@@ -444,17 +478,42 @@ func handleExtraPayment(charge stripe.Charge) error {
 		return err
 	}
 
-	schedule, err := handleExtraMouros(userConfirm, db_user)
-	if err != nil {
-		log.Printf("Error creating subscription schedule: %v", err)
-		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
-		return err
+	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.MourosSubscription {
+		schedule, err := handleExtraMouros(userConfirm, db_user)
+		if err != nil {
+			log.Printf("Error creating subscription schedule: %v", err)
+			logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+			return err
+		}
+
+		fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+
+		log.Println("Payment succeeded for user", userID)
+		logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
+	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.Normal {
+		schedule, err := handleExtraNormal(userConfirm, db_user)
+		if err != nil {
+			log.Printf("Error creating subscription schedule: %v", err)
+			logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+			return err
+		}
+
+		fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+
+		log.Println("Payment succeeded for user", userID)
+		logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
+	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+		schedule, err := handleExtraOnlyOnXNoSubscription(userConfirm, db_user)
+		if err != nil {
+			log.Printf("Error creating subscription schedule: %v", err)
+			logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+			return err
+		}
+
+		fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+
+		log.Println("Payment succeeded for user", userID)
+		logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
 	}
-
-	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
-
-	log.Println("Payment succeeded for user", userID)
-	logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
-
 	return nil
 }

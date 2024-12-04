@@ -86,7 +86,6 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer: stripe.String(finalCustomer.ID),
 		PaymentMethodTypes: stripe.StringSlice([]string{
-			"card",
 			"mb_way",
 		}), Mode: stripe.String(string(stripe.CheckoutSessionModePayment)), // "Payment" para um único pagamento
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
@@ -194,7 +193,6 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer: stripe.String(finalCustomer.ID),
 		PaymentMethodTypes: stripe.StringSlice([]string{
-			"card",
 			"multibanco",
 		}), Mode: stripe.String(string(stripe.CheckoutSessionModePayment)), // "Payment" para um único pagamento
 		LineItems: []*stripe.CheckoutSessionLineItemParams{

@@ -264,51 +264,6 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, s.URL, http.StatusSeeOther)
 }
 
-func checkMourosDate() bool {
-	mourosStartDate := os.Getenv("MOUROS_STARTING_DATE")
-	mourosEndDate := os.Getenv("MOUROS_ENDING_DATE")
-
-	if mourosStartDate == "" || mourosEndDate == "" {
-		return false
-	}
-
-	// Parse the dates in day/month format
-	startingDateParts := strings.Split(mourosStartDate, "/")
-	endingDateParts := strings.Split(mourosEndDate, "/")
-
-	if len(startingDateParts) != 2 || len(endingDateParts) != 2 {
-		return false
-	}
-
-	startingDay, err := strconv.Atoi(startingDateParts[0])
-	if err != nil {
-		return false
-	}
-	startingMonth, err := strconv.Atoi(startingDateParts[1])
-	if err != nil {
-		return false
-	}
-
-	endingDay, err := strconv.Atoi(endingDateParts[0])
-	if err != nil {
-		return false
-	}
-	endingMonth, err := strconv.Atoi(endingDateParts[1])
-	if err != nil {
-		return false
-	}
-
-	now := time.Now()
-	startingDate := time.Date(now.Year(), time.Month(startingMonth), startingDay, 0, 0, 0, 0, time.UTC)
-	endingDate := time.Date(now.Year(), time.Month(endingMonth), endingDay, 23, 59, 59, 0, time.UTC)
-
-	if now.After(startingDate) && now.Before(endingDate) {
-		return true
-	}
-
-	return false
-}
-
 type PrePayment struct {
 	custumerID string
 	date       time.Time

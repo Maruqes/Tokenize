@@ -390,19 +390,15 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	if typeOfSubscription == TypeOfSubscriptionValues.Normal {
-
 		http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 
 	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX {
-
 		http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
 
 	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
-
 		http.HandleFunc("/create-checkout-session", paymentToCreateSubscriptionXDay) //subscricao
 
 	} else if typeOfSubscription == TypeOfSubscriptionValues.MourosSubscription {
-
 		http.HandleFunc("/create-checkout-session", mourosSubscription) //subscricao
 
 	} else {
@@ -417,6 +413,10 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 		} else {
 			log.Fatal("Invalid extra payment")
 		}
+	}
+
+	if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX && extraPayments != nil {
+		panic("Extra payments are not supported with this type of subscription")
 	}
 
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao

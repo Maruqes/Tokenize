@@ -6,7 +6,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/Maruqes/Tokenize/database"
 	"github.com/google/uuid"
 )
 
@@ -61,4 +63,86 @@ func isValidDate(dates string) {
 		log.Fatal("Invalid date")
 	}
 
+}
+
+func hasStartingDayPassed() bool {
+	startingDate := os.Getenv("STARTING_DATE")
+	startingDay := strings.Split(startingDate, "/")[0]
+	startingMonth := strings.Split(startingDate, "/")[1]
+
+	startingDayInt, err := strconv.Atoi(startingDay)
+	if err != nil {
+		log.Fatal("Invalid day format")
+	}
+	startingMonthInt, err := strconv.Atoi(startingMonth)
+	if err != nil {
+		log.Fatal("Invalid month format")
+	}
+
+	now := time.Now()
+	startingDate_date := time.Date(now.Year(), time.Month(startingMonthInt), startingDayInt, 0, 0, 0, 0, time.UTC)
+
+	return now.After(startingDate_date)
+}
+
+func checkMourosDate() bool {
+	mourosStartDate := os.Getenv("MOUROS_STARTING_DATE")
+	mourosEndDate := os.Getenv("MOUROS_ENDING_DATE")
+
+	if mourosStartDate == "" || mourosEndDate == "" {
+		return false
+	}
+
+	// Parse the dates in day/month format
+	startingDateParts := strings.Split(mourosStartDate, "/")
+	endingDateParts := strings.Split(mourosEndDate, "/")
+
+	if len(startingDateParts) != 2 || len(endingDateParts) != 2 {
+		return false
+	}
+
+	startingDay, err := strconv.Atoi(startingDateParts[0])
+	if err != nil {
+		return false
+	}
+	startingMonth, err := strconv.Atoi(startingDateParts[1])
+	if err != nil {
+		return false
+	}
+
+	endingDay, err := strconv.Atoi(endingDateParts[0])
+	if err != nil {
+		return false
+	}
+	endingMonth, err := strconv.Atoi(endingDateParts[1])
+	if err != nil {
+		return false
+	}
+
+	now := time.Now()
+	startingDate := time.Date(now.Year(), time.Month(startingMonth), startingDay, 0, 0, 0, 0, time.UTC)
+	endingDate := time.Date(now.Year(), time.Month(endingMonth), endingDay, 23, 59, 59, 0, time.UTC)
+
+	if now.After(startingDate) && now.Before(endingDate) {
+		return true
+	}
+
+	return false
+}
+
+func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
+	usr, err := database.GetUser(tokenizeID)
+	if err != nil {
+		return false, err
+	}
+
+	if usr.IsActive {
+		return true, nil
+	}
+
+	if val, err := doesHaveOfflinePayments(tokenizeID); err == nil && val {
+		return true, nil
+	}
+
+	return false, nil
 }
