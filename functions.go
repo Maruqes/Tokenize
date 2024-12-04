@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v81/price"
 )
 
 func generateUUID() string {
@@ -41,19 +40,9 @@ func checkAllEnv() {
 		}
 	}
 
-	if !isValidPriceID(os.Getenv("SUBSCRIPTION_PRICE_ID")) {
-		log.Fatal("Invalid SUBSCRIPTION_PRICE_ID")
-	}
-
 	isValidDate(os.Getenv("STARTING_DATE"))
 	isValidDate(os.Getenv("MOUROS_STARTING_DATE"))
 	isValidDate(os.Getenv("MOUROS_ENDING_DATE"))
-}
-
-func isValidPriceID(priceID string) bool {
-	_, err := price.Get(priceID, nil)
-
-	return err == nil
 }
 
 func isValidDate(dates string) {

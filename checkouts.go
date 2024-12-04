@@ -171,6 +171,9 @@ func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessio
 				BillingCycleAnchor: stripe.Int64(getFixedBillingFromENV()), // Função personalizada para calcular o timestamp
 			},
 
+			PaymentMethodTypes: stripe.StringSlice([]string{
+				"card", // Standard credit/debit card payment method
+			}),
 			SuccessURL: stripe.String(domain + success_path),
 			CancelURL:  stripe.String(domain + cancel_path),
 		}
@@ -186,9 +189,7 @@ func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessio
 			},
 		},
 		PaymentMethodTypes: stripe.StringSlice([]string{
-			"card",    // Standard credit/debit card payment method
-			"cashapp", // MB Way payment method
-			// You can add more methods here if needed, e.g., "sepa_debit", "ideal", etc.
+			"card", // Standard credit/debit card payment method
 		}),
 
 		SuccessURL: stripe.String(domain + success_path),
@@ -442,6 +443,7 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 func mourosSubscription(w http.ResponseWriter, r *http.Request) {
 
+	//if we are inside the date range
 	if checkMourosDate() {
 		createCheckoutSession(w, r)
 		return

@@ -139,11 +139,6 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 
 func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 
-	if checkMourosDate() {
-		createCheckoutSession(w, r)
-		return
-	}
-
 	// if r.Method != "POST" {
 	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	// 	return

@@ -19,20 +19,7 @@ import (
 	"github.com/stripe/stripe-go/v81/webhook"
 )
 
-//tipos de admin -> 0:superadmin, 1:admin, -1:sem acesso
-//para registrar tens de ser admin 0
-// tipo_admin   permissoes
-// 0			//tudo porque é 0
-// 1            //loja, produto
-
-//criar conta-sistema de pagamentos
-
-//criar conta normal  com perm -1
-//form de pagamento->pagar   //dar para pagar em dinheiro
-//é membro
-
-//uma subricicao
-//dar duracao a subscricao
+// ver a cena dos mouros para os outros, pagar multibanco sem mouros etc etc
 
 var domain = os.Getenv("DOMAIN")
 var Permissions = permissions{}

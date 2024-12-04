@@ -355,6 +355,45 @@ func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 	return nil
 }
 
+func handleExtraMouros(userConfirm ExtraPrePayments, db_user database.User) (*stripe.SubscriptionSchedule, error) {
+	additionalYears := userConfirm.number_of_payments
+
+	if !checkMourosDate() {
+		additionalYears = additionalYears - 1
+	}
+
+	endDate := time.Unix(getFixedBillingFromENV(), 0).AddDate(additionalYears, 0, 0).Unix()
+
+	scheduleParams := &stripe.SubscriptionScheduleParams{
+		Customer:  stripe.String(db_user.StripeID),
+		StartDate: stripe.Int64(time.Now().Unix()),
+		Phases: []*stripe.SubscriptionSchedulePhaseParams{
+			{
+				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
+					{
+						Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")), // Subscription price ID
+						Quantity: stripe.Int64(int64(1) * int64(userConfirm.number_of_payments)),
+					},
+				},
+				TrialEnd: stripe.Int64(endDate),
+				EndDate:  stripe.Int64(endDate),
+			},
+		},
+		EndBehavior: stripe.String("cancel"),
+	}
+	schedule, err := subscriptionschedule.New(scheduleParams)
+	if err != nil {
+		log.Printf("Error creating subscription schedule: %v", err)
+		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		return nil, err
+	}
+
+	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
+	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+
+	return schedule, nil
+}
+
 func handleExtraPayment(charge stripe.Charge) error {
 	purpose := charge.Metadata["purpose"]
 	userID := charge.Metadata["user_id"]
@@ -405,27 +444,7 @@ func handleExtraPayment(charge stripe.Charge) error {
 		return err
 	}
 
-	additionalYears := userConfirm.number_of_payments - 1
-	endDate := time.Unix(getFixedBillingFromENV(), 0).AddDate(additionalYears, 0, 0).Unix()
-
-	scheduleParams := &stripe.SubscriptionScheduleParams{
-		Customer:  stripe.String(db_user.StripeID),
-		StartDate: stripe.Int64(time.Now().Unix()),
-		Phases: []*stripe.SubscriptionSchedulePhaseParams{
-			{
-				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
-					{
-						Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")), // Subscription price ID
-						Quantity: stripe.Int64(int64(1) * int64(userConfirm.number_of_payments)),
-					},
-				},
-				TrialEnd: stripe.Int64(endDate),
-				EndDate:  stripe.Int64(endDate),
-			},
-		},
-		EndBehavior: stripe.String("cancel"),
-	}
-	schedule, err := subscriptionschedule.New(scheduleParams)
+	schedule, err := handleExtraMouros(userConfirm, db_user)
 	if err != nil {
 		log.Printf("Error creating subscription schedule: %v", err)
 		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
