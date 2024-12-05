@@ -74,8 +74,6 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Printf("Charge succeeded for %s.", charge.ID)
-	logMessage("Charge succeeded for " + charge.Customer.ID)
 	purpose := charge.Metadata["purpose"]
 	userID := charge.Metadata["user_id"]
 	orderID := charge.Metadata["order_id"]
@@ -89,13 +87,13 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 		}
 	} else if purpose == "Initial Subscription Payment Start Today" {
 		if err := handleInitialSubscriptionPaymentStartToday(charge); err != nil {
-			fmt.Fprintf(os.Stderr, "Error handling initial subscription payment: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error handling initial subscription paymentStart Today: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	} else if purpose == "ExtraPayExtra" {
 		if err := handleExtraPayment(charge); err != nil {
-			fmt.Fprintf(os.Stderr, "Error handling initial subscription payment: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error handling ExtraPayExtra: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -104,7 +102,7 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 		logMessage("Purpose not found")
 	}
 	log.Printf("Charge succeeded for %s (Purpose: %s, UserID: %s, OrderID: %s).", charge.ID, purpose, userID, orderID)
-
+	logMessage("Charge succeeded for " + charge.ID + " (Purpose: " + purpose + ", UserID: " + userID + ", OrderID: " + orderID + ")")
 }
 
 func invoice_created(w http.ResponseWriter, event stripe.Event) {

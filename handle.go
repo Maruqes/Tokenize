@@ -31,17 +31,12 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 			break
 		}
 	}
-	fmt.Printf("Subscription ID: %s\n", subscriptionID)
 
 	if subscriptionID == "" {
 		log.Printf("No subscription found for invoice %s", invoice.ID)
 		_, err := fmt.Fprintf(os.Stderr, "No subscription found for invoice %s", invoice.ID)
 		return err
 	}
-
-	fmt.Printf("Payment succeeded for customer %s\n", invoice.Customer.ID)
-	fmt.Printf("Amount: %d\n", invoice.AmountPaid)
-	fmt.Printf("Product: %s\n", invoice.Lines.Data[0].Price.Product.ID)
 
 	// Recuperar metadata do cliente associado
 	customer, err := getCustomer(invoice.Customer.ID)
@@ -73,6 +68,16 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 		log.Printf("Error activating user: %v", err)
 		return err
 	}
+
+	fmt.Printf("\n\nSubscription ID: %s\n", subscriptionID)
+	fmt.Printf("Payment succeeded for customer %s\n", invoice.Customer.ID)
+	fmt.Printf("Amount: %d\n", invoice.AmountPaid)
+	fmt.Printf("Product: %s\n\n\n", invoice.Lines.Data[0].Price.Product.ID)
+	logMessage(fmt.Sprintf("\n\nSubscription ID: %s", subscriptionID))
+	logMessage(fmt.Sprintf("\n\nPayment succeeded for customer %s", invoice.Customer.ID))
+	logMessage(fmt.Sprintf("Amount: %d", invoice.AmountPaid))
+	logMessage(fmt.Sprintf("Product: %s\n\n\n", invoice.Lines.Data[0].Price.Product.ID))
+
 	return nil
 }
 
@@ -115,7 +120,7 @@ func handleInitialSubscriptionPayment(charge stripe.Charge) error {
 		return fmt.Errorf("user not found in map")
 	}
 
-	if userConfirm.type_of == "Initial Subscription Payment" {
+	if userConfirm.type_of != "Initial Subscription Payment" {
 		PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
 		fmt.Println("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED")
 		return fmt.Errorf("if you seeing this conect support or stop messing with the requests")
@@ -269,7 +274,7 @@ func handleInitialSubscriptionPaymentStartToday(charge stripe.Charge) error {
 		return fmt.Errorf("user not found in map")
 	}
 
-	if userConfirm.type_of == "Initial Subscription Payment Start Today" {
+	if userConfirm.type_of != "Initial Subscription Payment Start Today" {
 		PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
 		fmt.Println("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED")
 		return fmt.Errorf("if you seeing this conect support or stop messing with the requests")
@@ -398,8 +403,7 @@ func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user data
 	endDate := time.Unix(time.Now().Unix(), 0).AddDate(userConfirm.number_of_payments, 0, 0).Unix()
 
 	scheduleParams := &stripe.SubscriptionScheduleParams{
-		Customer:  stripe.String(db_user.StripeID),
-		StartDate: stripe.Int64(time.Now().Unix()),
+		Customer: stripe.String(db_user.StripeID),
 		Phases: []*stripe.SubscriptionSchedulePhaseParams{
 			{
 				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
@@ -408,9 +412,9 @@ func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user data
 						Quantity: stripe.Int64(int64(1) * int64(userConfirm.number_of_payments)),
 					},
 				},
-				StartDate: stripe.Int64(getFixedBillingFromENV()),
 				TrialEnd:  stripe.Int64(endDate),
 				EndDate:   stripe.Int64(endDate),
+				StartDate: stripe.Int64((getFixedBillingFromENV())),
 			},
 		},
 		EndBehavior: stripe.String("cancel"),

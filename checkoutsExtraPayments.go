@@ -25,12 +25,6 @@ var extra_pagamentos_map = map[string]ExtraPrePayments{}
 
 // does not work becouse stirpe does not support mbway for now
 func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
-
-	if checkMourosDate() {
-		createCheckoutSession(w, r)
-		return
-	}
-
 	// if r.Method != "POST" {
 	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	// 	return

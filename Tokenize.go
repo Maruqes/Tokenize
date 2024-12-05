@@ -415,7 +415,7 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 		}
 	}
 
-	if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX && extraPayments != nil {
+	if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX && len(extraPayments) > 0 {
 		panic("Extra payments are not supported with this type of subscription")
 	}
 
