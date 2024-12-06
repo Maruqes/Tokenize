@@ -403,7 +403,12 @@ func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user data
 	endDate := time.Unix(time.Now().Unix(), 0).AddDate(userConfirm.number_of_payments, 0, 0).Unix()
 
 	scheduleParams := &stripe.SubscriptionScheduleParams{
+<<<<<<< HEAD
 		Customer: stripe.String(db_user.StripeID),
+=======
+		Customer:  stripe.String(db_user.StripeID),
+		StartDate: stripe.Int64(getFixedBillingFromENV()),
+>>>>>>> c643292 (more fixes added multibanco html for better testing)
 		Phases: []*stripe.SubscriptionSchedulePhaseParams{
 			{
 				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
@@ -412,9 +417,14 @@ func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user data
 						Quantity: stripe.Int64(int64(1) * int64(userConfirm.number_of_payments)),
 					},
 				},
+<<<<<<< HEAD
 				TrialEnd:  stripe.Int64(endDate),
 				EndDate:   stripe.Int64(endDate),
 				StartDate: stripe.Int64((getFixedBillingFromENV())),
+=======
+				TrialEnd: stripe.Int64(endDate),
+				EndDate:  stripe.Int64(endDate),
+>>>>>>> c643292 (more fixes added multibanco html for better testing)
 			},
 		},
 		EndBehavior: stripe.String("cancel"),

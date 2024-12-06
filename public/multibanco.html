@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscrição</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-r from-blue-400 to-blue-600 min-h-screen flex items-center justify-center">
+    <div class="bg-white shadow-xl rounded-lg p-6 w-96">
+        <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">Subscrição</h1>
+        <div class="mb-4">
+            <p class="text-gray-700 font-medium">Preço por subscrição:</p>
+            <p id="preco" class="text-xl font-semibold text-blue-500">A carregar...</p>
+        </div>
+        <form action="/multibanco" method="POST">
+            <div class="mb-4">
+                <label for="quantidade" class="block text-gray-700 font-medium mb-2">Quantidade:</label>
+                <input id="quantidade" name="quantidade" type="number" value="1" min="1" oninput="atualizarTotal()"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div class="mb-4">
+                <p class="text-gray-700 font-medium">Total:</p>
+                <p id="total" class="text-xl font-semibold text-green-500">0.00 €</p>
+            </div>
+            <button type="submit"
+                class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 font-semibold transition duration-300">
+                Confirmar Subscrição
+            </button>
+        </form>
+    </div>
+    <script>
+        let preco = 0;
+
+        // Função para obter o preço da subscrição
+        async function fetchPreco() {
+            try {
+                const response = await fetch('/getPrecoSub');
+                const data = await response.json();
+                preco = data.preco; // Supondo que o JSON retorna { "preco": 5 }
+                document.getElementById('preco').innerText = preco.toFixed(2) + " €";
+                atualizarTotal(); // Atualiza o total com o preço inicial
+            } catch (error) {
+                alert('Erro ao obter o preço da subscrição.');
+            }
+        }
+
+        // Atualiza o total com base na quantidade de subscrições
+        function atualizarTotal() {
+            const quantidade = document.getElementById('quantidade').value || 0;
+            const total = preco * quantidade;
+            document.getElementById('total').innerText = total.toFixed(2) + " €";
+        }
+
+        // Carrega o preço assim que a página é aberta
+        window.onload = fetchPreco;
+    </script>
+</body>
+
+</html>

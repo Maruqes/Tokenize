@@ -146,3 +146,33 @@ func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
 
 	return false, nil
 }
+
+func getStringForSubscription() string {
+	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.Normal {
+		return "Your subscription will start today"
+	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayX {
+		return "Your subscription will start today"
+	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+		month_day := os.Getenv("STARTING_DATE")
+		monthStr := strings.Split(month_day, "/")[1]
+		dayStr := strings.Split(month_day, "/")[0]
+
+		month, err := strconv.Atoi(monthStr)
+		if err != nil {
+			log.Fatal("Invalid month format")
+		}
+		day, err := strconv.Atoi(dayStr)
+		if err != nil {
+			log.Fatal("Invalid day format")
+		}
+
+		starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		if time.Now().After(starting_date) {
+			starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		}
+		return "Your subscription will start on " + starting_date.Format("02/01/2006")
+	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.MourosSubscription {
+		return "Your subscription will start today"
+	}
+	return ""
+}

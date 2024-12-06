@@ -16,6 +16,7 @@ import (
 	"github.com/stripe/stripe-go/v81"
 	portalsession "github.com/stripe/stripe-go/v81/billingportal/session"
 	"github.com/stripe/stripe-go/v81/customer"
+	"github.com/stripe/stripe-go/v81/price"
 	"github.com/stripe/stripe-go/v81/webhook"
 )
 
@@ -323,6 +324,33 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+var PRECO_SUB uint64
+var lastTimePrecoSub time.Time
+
+func getPrecoSub(w http.ResponseWriter, r *http.Request) {
+	if time.Since(lastTimePrecoSub) > 10*time.Minute {
+		priceStripe, err := price.Get(os.Getenv("SUBSCRIPTION_PRICE_ID"), nil)
+		if err != nil {
+			http.Error(w, "Failed to get price", http.StatusInternalServerError)
+			return
+		}
+
+		PRECO_SUB = uint64(priceStripe.UnitAmount)
+		lastTimePrecoSub = time.Now()
+	}
+
+	amount := float64(PRECO_SUB) / 100
+	response := map[string]float64{"preco": amount}
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
+
+}
+
 type TypeOfSubscription string
 
 // these subscriptions are only available with card
@@ -355,6 +383,8 @@ var GLOBAL_EXTRA_PAYMENTS = []ExtraPayments{}
 
 // set port like "4242"
 func Init(port string, success string, cancel string, typeOfSubscription TypeOfSubscription, extraPayments []ExtraPayments) {
+
+	fmt.Println(getStringForSubscription() + "\n")
 
 	success_path = success
 	cancel_path = cancel
@@ -436,6 +466,7 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 	http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
 
 	http.HandleFunc("/health", healthCheck)
+	http.HandleFunc("/getPrecoSub", getPrecoSub)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)

@@ -25,10 +25,23 @@ var extra_pagamentos_map = map[string]ExtraPrePayments{}
 
 // does not work becouse stirpe does not support mbway for now
 func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
+<<<<<<< HEAD
 	// if r.Method != "POST" {
 	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	// 	return
 	// }
+=======
+
+	if checkMourosDate() {
+		createCheckoutSession(w, r)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+>>>>>>> c643292 (more fixes added multibanco html for better testing)
 
 	login := CheckToken(r)
 	if !login {
@@ -87,7 +100,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no hoje "),
+						Name: stripe.String(getStringForSubscription()),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
@@ -132,10 +145,23 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 
 func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 
-	// if r.Method != "POST" {
-	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	// 	return
-	// }
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+		return
+	}
+
+	qntStr := r.FormValue("quantidade")
+	qnt, err := strconv.Atoi(qntStr)
+	if err != nil {
+		http.Error(w, "Error converting quantity to int", http.StatusBadRequest)
+		return
+	}
 
 	login := CheckToken(r)
 	if !login {
@@ -194,11 +220,11 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no hoje "),
+						Name: stripe.String(getStringForSubscription()),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
-				Quantity: stripe.Int64(1), // Quantidade (1 item)
+				Quantity: stripe.Int64(int64(qnt)), // Quantidade (1 item)
 			},
 		},
 
@@ -233,6 +259,6 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 		date:               time.Now(),
 		type_of:            "ExtraPayExtra",
 		extra_type:         "multibanco",
-		number_of_payments: 1,
+		number_of_payments: qnt,
 	}
 }

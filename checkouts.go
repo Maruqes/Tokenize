@@ -326,26 +326,6 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 	uuid := generateUUID()
 
-	month_day := os.Getenv("STARTING_DATE")
-	monthStr := strings.Split(month_day, "/")[1]
-	dayStr := strings.Split(month_day, "/")[0]
-
-	month, err := strconv.Atoi(monthStr)
-	if err != nil {
-		http.Error(w, "Invalid month", http.StatusBadRequest)
-		return
-	}
-	day, err := strconv.Atoi(dayStr)
-	if err != nil {
-		http.Error(w, "Invalid day", http.StatusBadRequest)
-		return
-	}
-
-	starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	if time.Now().After(starting_date) {
-		starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	}
-
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer:           stripe.String(finalCustomer.ID),
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),                     // Métodos de pagamento permitidos
@@ -355,7 +335,7 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no dia " + starting_date.Format("02/01/2006")),
+						Name: stripe.String(getStringForSubscription()),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
@@ -465,7 +445,7 @@ func mourosSubscription(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("Pagamento inicial para subscrição. A sua subscricão vai começar no hoje "),
+						Name: stripe.String(getStringForSubscription()),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
