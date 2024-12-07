@@ -20,7 +20,7 @@ import (
 	"github.com/stripe/stripe-go/v81/webhook"
 )
 
-// ver a cena dos mouros para os outros, pagar multibanco sem mouros etc etc
+//falta joia (codigo desconto)
 
 var domain = os.Getenv("DOMAIN")
 var Permissions = permissions{}
@@ -182,6 +182,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	//enviar email de confirmacao
 	id, err := database.AddUser("", credentials.Email, credentials.Username, credentials.Password)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Failed to create user check the credentials with err: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

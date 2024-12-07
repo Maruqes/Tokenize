@@ -25,23 +25,10 @@ var extra_pagamentos_map = map[string]ExtraPrePayments{}
 
 // does not work becouse stirpe does not support mbway for now
 func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
-<<<<<<< HEAD
 	// if r.Method != "POST" {
 	// 	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	// 	return
 	// }
-=======
-
-	if checkMourosDate() {
-		createCheckoutSession(w, r)
-		return
-	}
-
-	if r.Method != "POST" {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
->>>>>>> c643292 (more fixes added multibanco html for better testing)
 
 	login := CheckToken(r)
 	if !login {
@@ -137,7 +124,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 	extra_pagamentos_map[uuid] = ExtraPrePayments{
 		custumerID:         customer_id,
 		date:               time.Now(),
-		type_of:            "ExtraPayExtraay",
+		type_of:            "ExtraPayExtra",
 		extra_type:         "mbway",
 		number_of_payments: 1,
 	}
@@ -156,12 +143,14 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	qntStr := r.FormValue("quantidade")
-	qnt, err := strconv.Atoi(qntStr)
-	if err != nil {
-		http.Error(w, "Error converting quantity to int", http.StatusBadRequest)
-		return
-	}
+	// qntStr := r.FormValue("quantidade")
+	// qnt, err := strconv.Atoi(qntStr)
+	// if err != nil {
+	// 	http.Error(w, "Error converting quantity to int", http.StatusBadRequest)
+	// 	return
+	// }
+
+	qnt := 1
 
 	login := CheckToken(r)
 	if !login {

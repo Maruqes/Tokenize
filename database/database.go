@@ -24,9 +24,9 @@ func CreateTable() {
 	query := `
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        stripe_id TEXT UNIQUE,
-        email TEXT UNIQUE,
-        name TEXT NOT NULL UNIQUE, 
+        stripe_id TEXT,
+        email TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL, 
         password TEXT,
 		is_active BOOLEAN DEFAULT 0
     );
