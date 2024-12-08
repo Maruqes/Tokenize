@@ -1,4 +1,4 @@
-package Tokenize
+package Login
 
 import (
 	"crypto/rand"
@@ -63,7 +63,7 @@ func generateSecureToken(length int) (string, error) {
 	return string(token), nil
 }
 
-func loginUser(email, password string) (string, database.User, error) {
+func LoginUser(email, password string) (string, database.User, error) {
 	usr, err := database.GetUserByEmail(email)
 	if err != nil {
 		return "", usr, err
@@ -86,7 +86,7 @@ func loginUser(email, password string) (string, database.User, error) {
 	return token, usr, nil
 }
 
-func logoutUser(userID int) {
+func LogoutUser(userID int) {
 	loginStore.Delete(userID)
 }
 

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Maruqes/Tokenize/Login"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
@@ -30,7 +31,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	login := CheckToken(r)
+	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -152,7 +153,7 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 
 	qnt := 1
 
-	login := CheckToken(r)
+	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
@@ -204,7 +205,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := CheckToken(r)
+	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -279,7 +280,7 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := CheckToken(r)
+	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
@@ -389,7 +390,7 @@ func mourosSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := CheckToken(r)
+	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
