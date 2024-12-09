@@ -13,6 +13,7 @@ import (
 	"github.com/Maruqes/Tokenize/Login"
 	Logs "github.com/Maruqes/Tokenize/Logs"
 	types "github.com/Maruqes/Tokenize/Types"
+	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
@@ -40,13 +41,59 @@ func InitNormalCheckouts(d string, sp string, cp string, gtos types.TypeOfSubscr
 	GLOBAL_TYPE_OF_SUBSCRIPTION = gtos
 }
 
-func MourosSubscription(w http.ResponseWriter, r *http.Request) {
+func createCheckoutStruct(finalCustomer *stripe.Customer, customerIDInt int) *stripe.CheckoutSessionParams {
 
-	//if we are inside the date range
-	if functions.CheckMourosDate() {
-		// createCheckoutSession(w, r)  tem de voltar crl
+	return &stripe.CheckoutSessionParams{
+		Customer: stripe.String(finalCustomer.ID),
+		Mode:     stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(os.Getenv("SUBSCRIPTION_PRICE_ID")),
+				Quantity: stripe.Int64(1),
+			},
+		},
+		PaymentMethodTypes: stripe.StringSlice([]string{
+			"card", // Standard credit/debit card payment method
+		}),
+
+		SuccessURL: stripe.String(domain + success_path),
+		CancelURL:  stripe.String(domain + cancel_path),
+
+		Discounts: returnDisctountStruct(customerIDInt),
+	}
+}
+
+func insideDateRange(w http.ResponseWriter, r *http.Request, usr database.User, customer_id string, customerIDInt int) {
+
+	//creates or gets the customer
+	finalCustomer, err := checkouts.HandleCreatingCustomer(usr, customer_id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Configurar sessão de checkout com o cliente criado
+	checkoutParams := createCheckoutStruct(finalCustomer, customerIDInt)
+
+	if checkouts.GetFixedBillingFromENV() == 0 {
+		checkoutParams.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
+			BillingCycleAnchor: nil,
+		}
+	}
+
+	s, err := session.New(checkoutParams)
+	if err != nil {
+		log.Printf("session.New: %v", err)
+		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
+		return
+	}
+
+	Logs.LogMessage("Checkout session created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+
+	http.Redirect(w, r, s.URL, http.StatusSeeOther)
+}
+
+func MourosSubscription(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -85,6 +132,12 @@ func MourosSubscription(w http.ResponseWriter, r *http.Request) {
 	finalCustomer, err := checkouts.HandleCreatingCustomer(usr, customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//if we are inside the date range
+	if functions.CheckMourosDate() {
+		insideDateRange(w, r, usr, customer_id, customerIDInt)
 		return
 	}
 
