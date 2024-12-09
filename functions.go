@@ -176,3 +176,8 @@ func getStringForSubscription() string {
 	}
 	return ""
 }
+
+func hadAnySubscription(userID string) (bool, error) {
+
+	return false, nil
+}
