@@ -69,7 +69,11 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 		return err
 	}
 
-	fmt.Printf("\n\nSubscription ID: %s\n", subscriptionID)
+	if invoice.AmountPaid != 0 {
+		SetCoupon(invoice.Subscription.ID)
+	}
+
+	fmt.Printf("\n\nSubscription PRICE ID: %s\n", subscriptionID)
 	fmt.Printf("Payment succeeded for customer %s\n", invoice.Customer.ID)
 	fmt.Printf("Amount: %d\n", invoice.AmountPaid)
 	fmt.Printf("Product: %s\n\n\n", invoice.Lines.Data[0].Price.Product.ID)
