@@ -8,7 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
+	"github.com/Maruqes/Tokenize/Logs"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
@@ -46,7 +49,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 	customer_id := customer_id_cookie.Value
 
 	//validate user
-	usr, err := validateUserInfoToActivate(customer_id)
+	usr, err := checkouts.ValidateUserInfoToActivate(customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -64,7 +67,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//creates or gets the customer
-	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
+	finalCustomer, err := checkouts.HandleCreatingCustomer(usr, customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -76,7 +79,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid := generateUUID()
+	uuid := functions.GenerateUUID()
 
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer: stripe.String(finalCustomer.ID),
@@ -88,7 +91,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String(getStringForSubscription()),
+						Name: stripe.String(functions.GetStringForSubscription()),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
@@ -107,7 +110,6 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
-		Discounts:  returnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session
@@ -121,7 +123,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Redireciona o utilizador para: %s\n", session.URL)
 	http.Redirect(w, r, session.URL, http.StatusSeeOther)
 	log.Println("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
-	logMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+	Logs.LogMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
 
 	extra_pagamentos_map[uuid] = ExtraPrePayments{
 		custumerID:         customer_id,
@@ -169,7 +171,7 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	customer_id := customer_id_cookie.Value
 
 	//validate user
-	usr, err := validateUserInfoToActivate(customer_id)
+	usr, err := checkouts.ValidateUserInfoToActivate(customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -187,7 +189,7 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//creates or gets the customer
-	finalCustomer, err := handleCreatingCustomer(usr, customer_id)
+	finalCustomer, err := checkouts.HandleCreatingCustomer(usr, customer_id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -199,7 +201,7 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid := generateUUID()
+	uuid := functions.GenerateUUID()
 
 	checkoutParams := &stripe.CheckoutSessionParams{
 		Customer: stripe.String(finalCustomer.ID),
@@ -211,7 +213,7 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("eur"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String(getStringForSubscription()),
+						Name: stripe.String(functions.GetStringForSubscription()),
 					},
 					UnitAmount: &p.UnitAmount, // Valor em cêntimos
 				},
@@ -230,8 +232,6 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
-
-		Discounts: returnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session
@@ -245,7 +245,7 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Redireciona o utilizador para: %s\n", session.URL)
 	http.Redirect(w, r, session.URL, http.StatusSeeOther)
 	log.Println("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
-	logMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+	Logs.LogMessage("Payment to create subscription created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
 
 	extra_pagamentos_map[uuid] = ExtraPrePayments{
 		custumerID:         customer_id,

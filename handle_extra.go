@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	functions "github.com/Maruqes/Tokenize/Functions"
+	"github.com/Maruqes/Tokenize/Logs"
+	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/subscriptionschedule"
@@ -15,11 +19,11 @@ import (
 func handleExtraMouros(userConfirm ExtraPrePayments, db_user database.User) (*stripe.SubscriptionSchedule, error) {
 	additionalYears := userConfirm.number_of_payments
 
-	if !checkMourosDate() || hasStartingDayPassed() {
+	if !functions.CheckMourosDate() || functions.HasStartingDayPassed() {
 		additionalYears = additionalYears - 1
 	}
 
-	endDate := time.Unix(getFixedBillingFromENV(), 0).AddDate(additionalYears, 0, 0).Unix()
+	endDate := time.Unix(checkouts.GetFixedBillingFromENV(), 0).AddDate(additionalYears, 0, 0).Unix()
 
 	scheduleParams := &stripe.SubscriptionScheduleParams{
 		Customer:  stripe.String(db_user.StripeID),
@@ -41,12 +45,12 @@ func handleExtraMouros(userConfirm ExtraPrePayments, db_user database.User) (*st
 	schedule, err := subscriptionschedule.New(scheduleParams)
 	if err != nil {
 		log.Printf("Error creating subscription schedule: %v", err)
-		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		Logs.LogMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 		return nil, err
 	}
 
 	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
-	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+	Logs.LogMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
 
 	return schedule, nil
 }
@@ -75,23 +79,23 @@ func handleExtraNormal(userConfirm ExtraPrePayments, db_user database.User) (*st
 	schedule, err := subscriptionschedule.New(scheduleParams)
 	if err != nil {
 		log.Printf("Error creating subscription schedule: %v", err)
-		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		Logs.LogMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 		return nil, err
 	}
 
 	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
-	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+	Logs.LogMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
 
 	return schedule, nil
 }
 
 func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user database.User) (*stripe.SubscriptionSchedule, error) {
 
-	endDate := time.Unix(getFixedBillingFromENV(), 0).AddDate(userConfirm.number_of_payments, 0, 0).Unix()
+	endDate := time.Unix(checkouts.GetFixedBillingFromENV(), 0).AddDate(userConfirm.number_of_payments, 0, 0).Unix()
 
 	scheduleParams := &stripe.SubscriptionScheduleParams{
 		Customer:  stripe.String(db_user.StripeID),
-		StartDate: stripe.Int64(getFixedBillingFromENV()),
+		StartDate: stripe.Int64(checkouts.GetFixedBillingFromENV()),
 		Phases: []*stripe.SubscriptionSchedulePhaseParams{
 			{
 				Items: []*stripe.SubscriptionSchedulePhaseItemParams{
@@ -109,12 +113,12 @@ func handleExtraOnlyOnXNoSubscription(userConfirm ExtraPrePayments, db_user data
 	schedule, err := subscriptionschedule.New(scheduleParams)
 	if err != nil {
 		log.Printf("Error creating subscription schedule: %v", err)
-		logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+		Logs.LogMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 		return nil, err
 	}
 
 	fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
-	logMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
+	Logs.LogMessage(fmt.Sprintf("Subscrição agendada com sucesso! ID: %s", schedule.ID))
 
 	return schedule, nil
 }
@@ -142,7 +146,7 @@ func handleExtraPayment(charge stripe.Charge) error {
 	}
 
 	if userConfirm.type_of != "ExtraPayExtra" {
-		PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
+		Logs.PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
 		fmt.Println("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED")
 		return fmt.Errorf("if you seeing this conect support or stop messing with the requests")
 	}
@@ -153,7 +157,7 @@ func handleExtraPayment(charge stripe.Charge) error {
 	}
 
 	if extraType != "mbway" && extraType != "multibanco" {
-		PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
+		Logs.PanicLog("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED\n\n")
 		fmt.Println("\n\nSHIT IS HAPPENING HERE THIS SHOULD NOT HAPPEN 99% REQUEST ALTERED")
 		return fmt.Errorf("if you seeing this conect support or stop messing with the requests")
 	}
@@ -169,42 +173,42 @@ func handleExtraPayment(charge stripe.Charge) error {
 		return err
 	}
 
-	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.MourosSubscription {
+	if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.MourosSubscription {
 		schedule, err := handleExtraMouros(userConfirm, db_user)
 		if err != nil {
 			log.Printf("Error creating subscription schedule: %v", err)
-			logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+			Logs.LogMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 			return err
 		}
 
 		fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
 
 		log.Println("Payment succeeded for user", userID)
-		logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
-	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.Normal {
+		Logs.LogMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
+	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.Normal {
 		schedule, err := handleExtraNormal(userConfirm, db_user)
 		if err != nil {
 			log.Printf("Error creating subscription schedule: %v", err)
-			logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+			Logs.LogMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 			return err
 		}
 
 		fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
 
 		log.Println("Payment succeeded for user", userID)
-		logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
-	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+		Logs.LogMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
+	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
 		schedule, err := handleExtraOnlyOnXNoSubscription(userConfirm, db_user)
 		if err != nil {
 			log.Printf("Error creating subscription schedule: %v", err)
-			logMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
+			Logs.LogMessage(fmt.Sprintf("Error creating subscription schedule: %v", err))
 			return err
 		}
 
 		fmt.Printf("Subscrição agendada com sucesso! ID: %s\n", schedule.ID)
 
 		log.Println("Payment succeeded for user", userID)
-		logMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
+		Logs.LogMessage(fmt.Sprintf("Payment succeeded for user %s", userID))
 	}
 	return nil
 }

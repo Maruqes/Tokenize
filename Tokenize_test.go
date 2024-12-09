@@ -3,11 +3,13 @@ package Tokenize
 import (
 	"testing"
 
+	functions "github.com/Maruqes/Tokenize/Functions"
+	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 )
 
 func TestThis(t *testing.T) {
-	Init("4242", "/success.html", "/cancel.html", TypeOfSubscriptionValues.Normal, []ExtraPayments{ExtraPaymentsValues.Multibanco})
+	Init("4242", "/success.html", "/cancel.html", types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription, []types.ExtraPayments{types.ExtraPaymentsValues.Multibanco})
 }
 
 var perms = permissions{}
@@ -69,7 +71,7 @@ func TestPermission6(t *testing.T) {
 
 func TestPermission7(t *testing.T) {
 	database.Init()
-	a, err := DoesUserHaveActiveSubscription(1)
+	a, err := functions.DoesUserHaveActiveSubscription(1)
 	if err != nil {
 		t.Error(err)
 	}

@@ -10,13 +10,19 @@ import (
 	"strconv"
 	"time"
 
+	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
+	"github.com/Maruqes/Tokenize/Logs"
+	mourosSub "github.com/Maruqes/Tokenize/MourosSub"
+	normalSub "github.com/Maruqes/Tokenize/NormalSub"
+	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
+	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
 	portalsession "github.com/stripe/stripe-go/v81/billingportal/session"
-	"github.com/stripe/stripe-go/v81/customer"
 	"github.com/stripe/stripe-go/v81/price"
 	"github.com/stripe/stripe-go/v81/webhook"
 )
@@ -28,19 +34,6 @@ var Permissions = permissions{}
 
 var success_path = ""
 var cancel_path = ""
-
-func checkIfEmailIsBeingUsedInStripe(email string) bool {
-	params := &stripe.CustomerListParams{
-		Email: stripe.String(email),
-	}
-	i := customer.List(params)
-	for i.Next() {
-		if i.Customer().Email == email {
-			return true
-		}
-	}
-	return false
-}
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	// For demonstration purposes, we're using the Checkout session to retrieve the customer ID.
@@ -84,7 +77,7 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("ps.New: %v", ps.URL)
-	logMessage("Portal session created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
+	Logs.LogMessage("Portal session created for user " + usr.Name + " with id " + customer_id + " and email " + usr.Email)
 	http.Redirect(w, r, ps.URL, http.StatusSeeOther)
 }
 
@@ -130,7 +123,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		invoice_created(w, event)
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
-		logMessage("Unhandled event type: " + string(event.Type))
+		Logs.LogMessage("Unhandled event type: " + string(event.Type))
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -161,21 +154,21 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received credentials: %s / %s", credentials.Username, credentials.Email)
 
-	logMessage("Create user attempt with email " + credentials.Email + " and username " + credentials.Username)
+	Logs.LogMessage("Create user attempt with email " + credentials.Email + " and username " + credentials.Username)
 
 	if credentials.Username == "" || credentials.Password == "" || credentials.Email == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	isValidEmailTest := isValidEmail(credentials.Email)
+	isValidEmailTest := functions.IsValidEmail(credentials.Email)
 	if !isValidEmailTest {
 		http.Error(w, "Invalid email", http.StatusBadRequest)
 		return
 	}
 
 	//nao pode criar uma conta cujo email ja esta na stripe
-	if checkIfEmailIsBeingUsedInStripe(credentials.Email) {
+	if checkouts.CheckIfEmailIsBeingUsedInStripe(credentials.Email) {
 		http.Error(w, "Email already in use", http.StatusBadRequest)
 		return
 	}
@@ -187,7 +180,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create user check the credentials with err: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	logMessage("User created with id/name " + strconv.Itoa(int(id)) + "/" + credentials.Username)
+	Logs.LogMessage("User created with id/name " + strconv.Itoa(int(id)) + "/" + credentials.Username)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(`{"id": %d}`, id)))
@@ -211,14 +204,14 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received credentials: %s / %s", credentials.Email, credentials.Password)
 
-	logMessage("Login attempt with email " + credentials.Email)
+	Logs.LogMessage("Login attempt with email " + credentials.Email)
 
 	if credentials.Email == "" || credentials.Password == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	isValidEmailTest := isValidEmail(credentials.Email)
+	isValidEmailTest := functions.IsValidEmail(credentials.Email)
 	if !isValidEmailTest {
 		http.Error(w, "Invalid email", http.StatusBadRequest)
 		return
@@ -248,7 +241,7 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(5 * 24 * time.Hour),
 	})
 
-	logMessage("User logged in with id/name " + strconv.Itoa(usr.ID) + "/" + usr.Name)
+	Logs.LogMessage("User logged in with id/name " + strconv.Itoa(usr.ID) + "/" + usr.Name)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -317,7 +310,7 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	logMessage("User logged out with id " + strconv.Itoa(idInt))
+	Logs.LogMessage("User logged out with id " + strconv.Itoa(idInt))
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -353,71 +346,15 @@ func getPrecoSub(w http.ResponseWriter, r *http.Request) {
 
 }
 
-type TypeOfSubscription string
-
-// these subscriptions are only available with card
-// Agrupa os valores do enum num struct
-var TypeOfSubscriptionValues = struct {
-	Normal                        TypeOfSubscription
-	OnlyStartOnDayX               TypeOfSubscription
-	OnlyStartOnDayXNoSubscription TypeOfSubscription
-	MourosSubscription            TypeOfSubscription
-}{
-	Normal:                        "Normal",
-	OnlyStartOnDayX:               "OnlyStartOnDayX",
-	OnlyStartOnDayXNoSubscription: "OnlyStartOnDayXNoSubscription",
-	MourosSubscription:            "MourosSubscription",
-}
-
-// a subscription you need to pay manually for now with mbway/multibanco both portuguese payment methods
-type ExtraPayments string
-
-var ExtraPaymentsValues = struct {
-	MBWay      ExtraPayments
-	Multibanco ExtraPayments
-}{
-	MBWay:      "mbway",
-	Multibanco: "multibanco",
-}
-
-var GLOBAL_TYPE_OF_SUBSCRIPTION = TypeOfSubscriptionValues.Normal
-var GLOBAL_EXTRA_PAYMENTS = []ExtraPayments{}
-
-func testzao(w http.ResponseWriter, r *http.Request) {
-	//get int from get
-
-	id_str := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(id_str)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
-	ret, err := hadAnySubscription(id)
-	if err != nil {
-		http.Error(w, "Error", http.StatusInternalServerError)
-		return
-	}
-
-	if ret {
-		w.Write([]byte("true"))
-	} else {
-		w.Write([]byte("false"))
-	}
-}
-
 // set port like "4242"
-func Init(port string, success string, cancel string, typeOfSubscription TypeOfSubscription, extraPayments []ExtraPayments) {
-
-	fmt.Println(getStringForSubscription() + "\n")
-
+func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
+	fmt.Println(functions.GetStringForSubscription() + "\n")
 	success_path = success
 	cancel_path = cancel
 
 	if success[0] != '/' || cancel[0] != '/' {
 		panic("Success/Cancel path must start with /")
 	}
-
 	port_int, err := strconv.Atoi(port)
 	if err != nil {
 		log.Fatal("Invalid port")
@@ -426,8 +363,7 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 		log.Fatal("Invalid port")
 	}
 
-	checkAllEnv()
-
+	functions.CheckAllEnv()
 	fmt.Println("Init")
 
 	database.Init()
@@ -435,42 +371,45 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 	database.CreatePermissionsTable()
 	database.CreateOfflineTable()
 
-	initLogs()
-
-	GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
-	GLOBAL_EXTRA_PAYMENTS = extraPayments
+	Logs.InitLogs()
+	types.GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
+	types.GLOBAL_EXTRA_PAYMENTS = extraPayments
 
 	stripe.Key = os.Getenv("SECRET_KEY")
 
+	normalSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
+	startOnDayXNoSub.InitOnDayXNoSubCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
+	mourosSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
+
 	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
-	if typeOfSubscription == TypeOfSubscriptionValues.Normal {
-		http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
+	if typeOfSubscription == types.TypeOfSubscriptionValues.Normal {
+		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
 
-	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX {
-		http.HandleFunc("/create-checkout-session", createCheckoutSession) //subscricao
+	} else if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayX {
+		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
 
-	} else if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
-		http.HandleFunc("/create-checkout-session", paymentToCreateSubscriptionXDay) //subscricao
+	} else if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+		http.HandleFunc("/create-checkout-session", startOnDayXNoSub.PaymentToCreateSubscriptionXDay) //subscricao
 
-	} else if typeOfSubscription == TypeOfSubscriptionValues.MourosSubscription {
-		http.HandleFunc("/create-checkout-session", mourosSubscription) //subscricao
+	} else if typeOfSubscription == types.TypeOfSubscriptionValues.MourosSubscription {
+		http.HandleFunc("/create-checkout-session", mourosSub.MourosSubscription) //subscricao
 
 	} else {
 		log.Fatal("Invalid type of subscription")
 	}
 
 	for i := 0; i < len(extraPayments); i++ {
-		if extraPayments[i] == ExtraPaymentsValues.MBWay {
+		if extraPayments[i] == types.ExtraPaymentsValues.MBWay {
 			http.HandleFunc("/mbway", mbwaySubscription)
-		} else if extraPayments[i] == ExtraPaymentsValues.Multibanco {
+		} else if extraPayments[i] == types.ExtraPaymentsValues.Multibanco {
 			http.HandleFunc("/multibanco", multibancoSubscription)
 		} else {
 			log.Fatal("Invalid extra payment")
 		}
 	}
 
-	if typeOfSubscription == TypeOfSubscriptionValues.OnlyStartOnDayX && len(extraPayments) > 0 {
+	if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayX && len(extraPayments) > 0 {
 		panic("Extra payments are not supported with this type of subscription")
 	}
 
@@ -492,8 +431,6 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
-
-	http.HandleFunc("/testzao", testzao)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)

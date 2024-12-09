@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Maruqes/Tokenize/Logs"
+	mourosSub "github.com/Maruqes/Tokenize/MourosSub"
+	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
 	"github.com/stripe/stripe-go/v81"
 )
 
@@ -31,7 +34,7 @@ func customer_subscription_created(w http.ResponseWriter, event stripe.Event) {
 		return
 	}
 	log.Printf("Subscription created for %s.", subscription.ID)
-	logMessage("Subscription in stripe created for " + subscription.Customer.ID)
+	Logs.LogMessage("Subscription in stripe created for " + subscription.Customer.ID)
 }
 
 func customer_created(w http.ResponseWriter, event stripe.Event) {
@@ -44,7 +47,7 @@ func customer_created(w http.ResponseWriter, event stripe.Event) {
 	}
 
 	log.Printf("Customer created for %s with email %s  ID:%s.", our_customer.Name, our_customer.Email, our_customer.ID)
-	logMessage("Customer in stripe created for " + our_customer.ID)
+	Logs.LogMessage("Customer in stripe created for " + our_customer.ID)
 }
 
 func invoice_payment_succeeded(w http.ResponseWriter, event stripe.Event) {
@@ -57,7 +60,7 @@ func invoice_payment_succeeded(w http.ResponseWriter, event stripe.Event) {
 		return
 	}
 	log.Printf("Invoice payment succeeded for %s.", invoice.ID)
-	logMessage("Invoice payment succeeded for " + invoice.Customer.ID)
+	Logs.LogMessage("Invoice payment succeeded for " + invoice.Customer.ID)
 	err = handlePaymentSuccess(invoice)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)
@@ -80,13 +83,13 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 
 	if purpose == "Initial Subscription Payment" {
 		//criar subscricao
-		if err := handleInitialSubscriptionPayment(charge); err != nil {
+		if err := startOnDayXNoSub.HandleInitialSubscriptionPayment(charge); err != nil {
 			fmt.Fprintf(os.Stderr, "Error handling initial subscription payment: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	} else if purpose == "Initial Subscription Payment Start Today" {
-		if err := handleInitialSubscriptionPaymentStartToday(charge); err != nil {
+		if err := mourosSub.HandleInitialSubscriptionPaymentStartToday(charge); err != nil {
 			fmt.Fprintf(os.Stderr, "Error handling initial subscription paymentStart Today: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -99,10 +102,10 @@ func charge_succeeded(w http.ResponseWriter, event stripe.Event) {
 		}
 	} else {
 		log.Println("Purpose not found")
-		logMessage("Purpose not found")
+		Logs.LogMessage("Purpose not found")
 	}
 	log.Printf("Charge succeeded for %s (Purpose: %s, UserID: %s, OrderID: %s).", charge.ID, purpose, userID, orderID)
-	logMessage("Charge succeeded for " + charge.ID + " (Purpose: " + purpose + ", UserID: " + userID + ", OrderID: " + orderID + ")")
+	Logs.LogMessage("Charge succeeded for " + charge.ID + " (Purpose: " + purpose + ", UserID: " + userID + ", OrderID: " + orderID + ")")
 }
 
 func invoice_created(w http.ResponseWriter, event stripe.Event) {
@@ -114,7 +117,7 @@ func invoice_created(w http.ResponseWriter, event stripe.Event) {
 		return
 	}
 	log.Printf("Invoice payment succeeded for %s.", invoice.ID)
-	logMessage("Invoice payment succeeded for " + invoice.Customer.ID)
+	Logs.LogMessage("Invoice payment succeeded for " + invoice.Customer.ID)
 	err = handlePaymentSuccess(invoice)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)

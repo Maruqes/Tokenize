@@ -1,4 +1,4 @@
-package Tokenize
+package functions
 
 import (
 	"log"
@@ -8,23 +8,25 @@ import (
 	"strings"
 	"time"
 
+	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/subscription"
+	"github.com/stripe/stripe-go/v81/customer"
+	"github.com/stripe/stripe-go/v81/paymentintent"
 )
 
-func generateUUID() string {
+func GenerateUUID() string {
 	uuid := uuid.New() // Generate a new UUIDv4
 	return uuid.String()
 }
 
-func isValidEmail(email string) bool {
+func IsValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }
 
-func checkAllEnv() {
+func CheckAllEnv() {
 	requiredEnvVars := []string{
 		"SECRET_KEY",
 		"ENDPOINT_SECRET",
@@ -44,12 +46,12 @@ func checkAllEnv() {
 		}
 	}
 
-	isValidDate(os.Getenv("STARTING_DATE"))
-	isValidDate(os.Getenv("MOUROS_STARTING_DATE"))
-	isValidDate(os.Getenv("MOUROS_ENDING_DATE"))
+	IsValidDate(os.Getenv("STARTING_DATE"))
+	IsValidDate(os.Getenv("MOUROS_STARTING_DATE"))
+	IsValidDate(os.Getenv("MOUROS_ENDING_DATE"))
 }
 
-func isValidDate(dates string) {
+func IsValidDate(dates string) {
 	day := strings.Split(dates, "/")[0]
 	month := strings.Split(dates, "/")[1]
 
@@ -64,10 +66,9 @@ func isValidDate(dates string) {
 	if dayInt > 31 || monthInt > 12 || dayInt < 1 || monthInt < 1 {
 		log.Fatal("Invalid date")
 	}
-
 }
 
-func hasStartingDayPassed() bool {
+func HasStartingDayPassed() bool {
 	startingDate := os.Getenv("STARTING_DATE")
 	startingDay := strings.Split(startingDate, "/")[0]
 	startingMonth := strings.Split(startingDate, "/")[1]
@@ -87,7 +88,7 @@ func hasStartingDayPassed() bool {
 	return now.After(startingDate_date)
 }
 
-func checkMourosDate() bool {
+func CheckMourosDate() bool {
 	mourosStartDate := os.Getenv("MOUROS_STARTING_DATE")
 	mourosEndDate := os.Getenv("MOUROS_ENDING_DATE")
 
@@ -142,19 +143,15 @@ func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
 		return true, nil
 	}
 
-	if val, err := doesHaveOfflinePayments(tokenizeID); err == nil && val {
-		return true, nil
-	}
-
 	return false, nil
 }
 
-func getStringForSubscription() string {
-	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.Normal {
+func GetStringForSubscription() string {
+	if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.Normal {
 		return "Your subscription will start today"
-	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayX {
+	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.OnlyStartOnDayX {
 		return "Your subscription will start today"
-	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
+	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
 		month_day := os.Getenv("STARTING_DATE")
 		monthStr := strings.Split(month_day, "/")[1]
 		dayStr := strings.Split(month_day, "/")[0]
@@ -173,61 +170,30 @@ func getStringForSubscription() string {
 			starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 		}
 		return "Your subscription will start on " + starting_date.Format("02/01/2006")
-	} else if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.MourosSubscription {
+	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.MourosSubscription {
 		return "Your subscription will start today"
 	}
 	return ""
 }
 
-func hadAnySubscription(userID int) (bool, error) {
-	usr, err := database.GetUser(userID)
+func DefinePaymentMethod(customerID string, paymentIntentID string) error {
+	paymentIntent, err := paymentintent.Get(paymentIntentID, nil)
 	if err != nil {
-		return false, err
+		log.Printf("Erro ao obter o PaymentIntent: %v", err)
+		return err
 	}
 
-	if usr.IsActive {
-		return true, nil
-	}
+	lastPaymentMethodID := paymentIntent.PaymentMethod.ID
 
-	if usr.StripeID == "" {
-		return false, nil
+	customerUpdateParams := &stripe.CustomerParams{
+		InvoiceSettings: &stripe.CustomerInvoiceSettingsParams{
+			DefaultPaymentMethod: stripe.String(lastPaymentMethodID),
+		},
 	}
-
-	params := &stripe.SubscriptionListParams{
-		Customer: stripe.String(usr.StripeID), // Substitua pelo ID do cliente
-		Status:   stripe.String("all"),
+	_, err = customer.Update(customerID, customerUpdateParams)
+	if err != nil {
+		log.Printf("Erro ao definir o método de pagamento padrão: %v", err)
+		return err
 	}
-	i := subscription.List(params)
-
-	for i.Next() {
-		s := i.Subscription()
-		// Processar cada subscrição conforme necessário
-		if s.Items != nil && len(s.Items.Data) > 0 {
-			for _, item := range s.Items.Data {
-				if item.Price.ID == os.Getenv("SUBSCRIPTION_PRICE_ID") {
-					return true, nil
-				}
-			}
-		}
-	}
-	if err := i.Err(); err != nil {
-		return false, err
-	}
-
-	return false, nil
-}
-
-// this is for mouros subscription, if user had any subscription, return the discount
-func returnDisctountStruct(userID int) []*stripe.CheckoutSessionDiscountParams {
-	if os.Getenv("COUPON_ID") == "" {
-		return nil
-	}
-	var discounts []*stripe.CheckoutSessionDiscountParams
-	val, err := hadAnySubscription(userID)
-	if err == nil && val {
-		discounts = append(discounts, &stripe.CheckoutSessionDiscountParams{
-			Coupon: stripe.String(os.Getenv("COUPON_ID")),
-		})
-	}
-	return discounts
+	return nil
 }

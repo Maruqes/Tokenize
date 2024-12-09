@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Maruqes/Tokenize/Login"
+	"github.com/Maruqes/Tokenize/Logs"
 	"github.com/Maruqes/Tokenize/database"
 )
 
@@ -107,7 +108,7 @@ func payOffline(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to retrieve cookie", http.StatusInternalServerError)
 		return
 	}
-	logMessage(fmt.Sprintf("User %d paid %d offline, AUTHORIZER_ID: %s", userID, data.Quantity, cookie.Value))
+	Logs.LogMessage(fmt.Sprintf("User %d paid %d offline, AUTHORIZER_ID: %s", userID, data.Quantity, cookie.Value))
 
 	w.WriteHeader(http.StatusOK)
 }
