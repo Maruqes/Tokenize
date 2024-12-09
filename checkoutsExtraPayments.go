@@ -107,6 +107,7 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
+		Discounts:  returnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session
@@ -229,6 +230,8 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
+
+		Discounts: returnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session

@@ -153,7 +153,7 @@ wechat_pay, revolut_pay, mobilepay, zip, amazon_pay, alma, twint, kr_card,
 naver_pay, kakao_pay, payco, or samsung_pay"
 */
 
-func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessionParams {
+func createCheckoutStruct(finalCustomer *stripe.Customer, userID int) *stripe.CheckoutSessionParams {
 	if GLOBAL_TYPE_OF_SUBSCRIPTION == TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
 		panic("This function should not be called with this type of subscription")
 	}
@@ -177,6 +177,8 @@ func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessio
 			}),
 			SuccessURL: stripe.String(domain + success_path),
 			CancelURL:  stripe.String(domain + cancel_path),
+
+			Discounts: returnDisctountStruct(userID),
 		}
 	}
 
@@ -195,6 +197,8 @@ func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessio
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
+
+		Discounts: returnDisctountStruct(userID),
 	}
 }
 
@@ -245,7 +249,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Configurar sessão de checkout com o cliente criado
-	checkoutParams := createCheckoutStruct(finalCustomer)
+	checkoutParams := createCheckoutStruct(finalCustomer, customerIDInt)
 
 	if getFixedBillingFromENV() == 0 {
 		checkoutParams.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
@@ -355,6 +359,8 @@ func paymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
+
+		Discounts: returnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session
@@ -465,6 +471,8 @@ func mourosSubscription(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
+
+		Discounts: returnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session

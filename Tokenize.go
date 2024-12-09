@@ -383,6 +383,29 @@ var ExtraPaymentsValues = struct {
 var GLOBAL_TYPE_OF_SUBSCRIPTION = TypeOfSubscriptionValues.Normal
 var GLOBAL_EXTRA_PAYMENTS = []ExtraPayments{}
 
+func testzao(w http.ResponseWriter, r *http.Request) {
+	//get int from get
+
+	id_str := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
+		http.Error(w, "Invalid id", http.StatusBadRequest)
+		return
+	}
+
+	ret, err := hadAnySubscription(id)
+	if err != nil {
+		http.Error(w, "Error", http.StatusInternalServerError)
+		return
+	}
+
+	if ret {
+		w.Write([]byte("true"))
+	} else {
+		w.Write([]byte("false"))
+	}
+}
+
 // set port like "4242"
 func Init(port string, success string, cancel string, typeOfSubscription TypeOfSubscription, extraPayments []ExtraPayments) {
 
@@ -469,6 +492,8 @@ func Init(port string, success string, cancel string, typeOfSubscription TypeOfS
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
+
+	http.HandleFunc("/testzao", testzao)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
