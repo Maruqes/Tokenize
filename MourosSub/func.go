@@ -3,6 +3,7 @@ package mourosSub
 import (
 	"os"
 
+	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/subscription"
@@ -59,4 +60,14 @@ func returnDisctountStruct(userID int) []*stripe.CheckoutSessionDiscountParams {
 		})
 	}
 	return discounts
+}
+
+// this is for mouros subscription, if user had any subscription, return the discount
+func ReturnDisctountStruct(userID int) []*stripe.CheckoutSessionDiscountParams {
+	if GLOBAL_TYPE_OF_SUBSCRIPTION != types.TypeOfSubscriptionValues.MourosSubscription {
+		var discounts []*stripe.CheckoutSessionDiscountParams
+		return discounts
+	}
+
+	return returnDisctountStruct(userID)
 }

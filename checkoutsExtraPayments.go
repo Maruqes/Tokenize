@@ -12,6 +12,7 @@ import (
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
+	mourosSub "github.com/Maruqes/Tokenize/MourosSub"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
@@ -232,6 +233,8 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
+
+		Discounts: mourosSub.ReturnDisctountStruct(customerIDInt),
 	}
 
 	// Cria a Checkout Session
