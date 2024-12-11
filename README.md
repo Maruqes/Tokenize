@@ -43,15 +43,11 @@
 - **GET** `/health`  
   Verify the operational status of the system.
 
-### Offline Payments
-- **GET** `/pay-offline`  
-  Facilitate manual payments for offline subscriptions. A superuser with the `SECRET_ADMIN` key can create accounts that simulate Stripe subscriptions for manual payment methods like cash.
+### System
+- **GET** `/getPrecoSub`  
+  Get price of subscription
 
-- **GET** `/get-offline-last-time`  
-  Retrieve the expiration date of an offline subscription.
 
-- **GET** `/get-offline-id`  
-  Fetch payment records by user ID for offline transactions processed via `/pay-offline`.
 
 ## .env Configuration
 
@@ -65,7 +61,14 @@
 | `SECRET_ADMIN`                | Secret key for offline payment authorization           | `sk_test_9SN7...`            |
 | `LOGS_FILE`                   | Path to your log file                                  | `logs.txt`                   |
 | `NUMBER_OF_SUBSCRIPTIONS_MONTHS` | Number of months per subscription cycle              | `12`                         |
-| `STARTING_DATE`               | Specific subscription start date (or `0/0` for normal) | `12/20`                      |
+| `STARTING_DATE`               | Specific subscription start date (or `0/0` for normal) | `1/12`                      |
+
+### Mouros Specific
+| Variable                      | Description                                             | Example                       |
+|-------------------------------|---------------------------------------------------------|-------------------------------|
+| `MOUROS_STARTING_DATE`               | Mouros start date (or `0/0` for normal) | `1/12`                      |
+| `MOUROS_ENDING_DATE`               | Mouros end date (or `0/0` for normal) | `30/12`                      |
+| `COUPON_ID`               | coupon for mouros (or `0/0` for normal) | `bsguqRh0`                      |
 
 ## Types of Subscriptions
 
@@ -78,6 +81,9 @@
 
 - **OnlyStartOnDayXNoSubscription**  
   Similar to `OnlyStartOnDayX`, but access is only granted once the `STARTING_DATE` is reached.
+
+- **Mouros**  
+  Mouros is a specific type of subscription that the idea is you pay a full year even if you just started it or finishing, first year is a defined price but next ones have a coupon added, the motivation behing this project
 
 ## Setup Instructions
 
