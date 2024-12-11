@@ -1,4 +1,4 @@
-package userFuncs
+package UserFuncs
 
 import "github.com/Maruqes/Tokenize/database"
 
