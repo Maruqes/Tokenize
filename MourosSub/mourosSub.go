@@ -115,7 +115,6 @@ func MourosSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//if has offline payments
 	customerIDInt, err := strconv.Atoi(customer_id)
 	if err != nil {
 		http.Error(w, "Invalid customer ID", http.StatusBadRequest)

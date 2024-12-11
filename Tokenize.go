@@ -425,9 +425,9 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/logout-user", logoutUsr)
 
 	//admin
-	http.HandleFunc("/pay-offline", payOffline)
-	http.HandleFunc("/get-offline-id", getOfflineWithID)
-	http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
+	// http.HandleFunc("/pay-offline", payOffline)
+	// http.HandleFunc("/get-offline-id", getOfflineWithID)
+	// http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)

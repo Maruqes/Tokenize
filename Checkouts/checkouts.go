@@ -26,16 +26,6 @@ func CheckIfEmailIsBeingUsedInStripe(email string) bool {
 	return false
 }
 
-func GetCustomer(id string) (*stripe.Customer, error) {
-	customer, err := customer.Get(id, nil)
-	if err != nil {
-		log.Printf("Error getting customer: %v", err)
-		return nil, err
-	}
-
-	return customer, nil
-}
-
 func CheckIfIDBeingUsedInStripe(id string) bool {
 	params := &stripe.CustomerListParams{}
 	i := customer.List(params)
@@ -45,6 +35,16 @@ func CheckIfIDBeingUsedInStripe(id string) bool {
 		}
 	}
 	return false
+}
+
+func GetCustomer(id string) (*stripe.Customer, error) {
+	customer, err := customer.Get(id, nil)
+	if err != nil {
+		log.Printf("Error getting customer: %v", err)
+		return nil, err
+	}
+
+	return customer, nil
 }
 
 // if custumer already exists in stripe it does not create a new one and uses the existing one
