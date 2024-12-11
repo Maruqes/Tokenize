@@ -59,6 +59,7 @@ func secondSubscriptionMoure(userid string) (*stripe.SubscriptionSchedule, error
 						Quantity: stripe.Int64(1),
 					},
 				},
+				Discounts: returnDisctountStructSchedule(),
 			},
 		},
 	}

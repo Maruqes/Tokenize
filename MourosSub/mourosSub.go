@@ -75,12 +75,6 @@ func insideDateRange(w http.ResponseWriter, r *http.Request, usr database.User, 
 	// Configurar sessão de checkout com o cliente criado
 	checkoutParams := createCheckoutStruct(finalCustomer, customerIDInt)
 
-	if checkouts.GetFixedBillingFromENV() == 0 {
-		checkoutParams.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
-			BillingCycleAnchor: nil,
-		}
-	}
-
 	s, err := session.New(checkoutParams)
 	if err != nil {
 		log.Printf("session.New: %v", err)

@@ -8,6 +8,8 @@ import (
 
 	checkouts "github.com/Maruqes/Tokenize/Checkouts"
 	"github.com/Maruqes/Tokenize/Logs"
+	mourosSub "github.com/Maruqes/Tokenize/MourosSub"
+	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -68,8 +70,8 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 	}
 
 	//this is mouros specific
-	if invoice.AmountPaid != 0 {
-		SetCoupon(invoice.Subscription.ID)
+	if invoice.AmountPaid != 0 && types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.MourosSubscription {
+		mourosSub.SetCoupon(invoice.Subscription.ID)
 	}
 
 	fmt.Printf("\n\nSubscription PRICE ID: %s\n", subscriptionID)
