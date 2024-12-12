@@ -1,6 +1,8 @@
 package UserFuncs
 
-import "github.com/Maruqes/Tokenize/database"
+import (
+	"github.com/Maruqes/Tokenize/database"
+)
 
 func GetAllUsers() ([]database.User, error) {
 	return database.GetAllUsers()

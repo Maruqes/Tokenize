@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/database"
 )
 
@@ -23,28 +24,28 @@ type LoginStore struct {
 
 const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-func NewLoginStore() *LoginStore {
+func newLoginStore() *LoginStore {
 	return &LoginStore{
 		logins: make(map[int]Login),
 	}
 }
 
-var loginStore = NewLoginStore()
+var loginStore = newLoginStore()
 
-func (s *LoginStore) Add(login Login) {
+func (s *LoginStore) add(login Login) {
 	s.Lock()
 	defer s.Unlock()
 	s.logins[login.UserID] = login
 }
 
-func (s *LoginStore) Get(userID int) (Login, bool) {
+func (s *LoginStore) get(userID int) (Login, bool) {
 	s.RLock()
 	defer s.RUnlock()
 	login, ok := s.logins[userID]
 	return login, ok
 }
 
-func (s *LoginStore) Delete(userID int) {
+func (s *LoginStore) delete(userID int) {
 	s.Lock()
 	defer s.Unlock()
 	delete(s.logins, userID)
@@ -79,7 +80,7 @@ func LoginUser(email, password string) (string, database.User, error) {
 		return "", usr, err
 	}
 
-	loginStore.Add(Login{
+	loginStore.add(Login{
 		UserID: usr.ID,
 		Token:  token,
 	})
@@ -87,7 +88,7 @@ func LoginUser(email, password string) (string, database.User, error) {
 }
 
 func LogoutUser(userID int) {
-	loginStore.Delete(userID)
+	loginStore.delete(userID)
 }
 
 func CheckToken(r *http.Request) bool {
@@ -107,10 +108,37 @@ func CheckToken(r *http.Request) bool {
 	token := cookie.Value
 
 	//check if token is valid
-	login, ok := loginStore.Get(id)
+	login, ok := loginStore.get(id)
 	if !ok || login.Token != token {
 		return false
 	}
-
 	return true
+}
+
+func IsUserActiveRequest(r *http.Request) (bool, error) {
+	cookie, err := r.Cookie("id")
+	if err != nil {
+		return false, fmt.Errorf("error getting id")
+	}
+	id, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return false, fmt.Errorf("error converting id to int")
+	}
+	cookie, err = r.Cookie("token")
+	if err != nil {
+		return false, fmt.Errorf("error getting token")
+	}
+	token := cookie.Value
+
+	//check if token is valid
+	login, ok := loginStore.get(id)
+	if !ok || login.Token != token {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	return functions.DoesUserHaveActiveSubscription(id)
+}
+
+func IsUserActive(id int) (bool, error) {
+	return functions.DoesUserHaveActiveSubscription(id)
 }
