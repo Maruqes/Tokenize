@@ -346,6 +346,39 @@ func getPrecoSub(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func isActive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if val, err := Login.IsUserActiveRequest(r); !val || err != nil {
+		w.Write([]byte(`{"active": false}`))
+		return
+	}
+	w.Write([]byte(`{"active": true}`))
+}
+
+func isActiveID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if !Login.CheckToken(r) {
+		w.Write([]byte(`{"active": false}`))
+		return
+	}
+
+	id, err := r.Cookie("id")
+	if err != nil {
+		http.Error(w, "Error getting id", http.StatusInternalServerError)
+		return
+	}
+	idInt, err := strconv.Atoi(id.Value)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+	if val, err := Login.IsUserActive(idInt); !val || err != nil {
+		w.Write([]byte(`{"active": false}`))
+		return
+	}
+	w.Write([]byte(`{"active": true}`))
+}
+
 // set port like "4242"
 func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
 	fmt.Println(functions.GetStringForSubscription() + "\n")
@@ -423,6 +456,8 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/create-user", createUser)
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
+	http.HandleFunc("/isActive", isActive)
+	http.HandleFunc("/isActiveID", isActiveID)
 
 	//admin
 	// http.HandleFunc("/pay-offline", payOffline)
