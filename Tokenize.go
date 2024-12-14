@@ -445,7 +445,7 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/webhook", handleWebhook)
 
 	//testing
-	http.HandleFunc("/testeLOGIN", testLogin)
+	// http.HandleFunc("/testeLOGIN", testLogin)
 
 	//auth
 	http.HandleFunc("/create-user", createUser)

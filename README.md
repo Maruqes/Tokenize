@@ -4,50 +4,115 @@
 
 ## Features
 
-- **Authentication**: Secure user registration and login with validation.
-- **Payment Management**:
-  - Seamless Stripe subscription integration.
-  - Support for offline payments.
-- **Administrative Tools**:
-  - Role-based user permissions for better access control.
-- **Webhooks**:
-  - Automated handling of events such as customer creation, payment success, and subscription cancellations.
-- **System Health**: A dedicated endpoint to monitor system status.
+- **Authentication**: Secure user registration and login with validation.  
+- **Payment Management**:  
+  - Seamless Stripe subscription integration.  
+  - Support for offline payments and Multibanco.  
+- **Administrative Tools**:  
+  - Role-based user permissions for better access control.  
+- **Webhooks**:  
+  - Automated handling of events such as customer creation, payment success, and subscription cancellations.  
+- **System Health**: A dedicated endpoint to monitor system status.  
 
 ## Endpoints
 
 ### User Management
+
 - **POST** `/create-user`  
-  Create a new user account.
+  **Description**: Creates a new user account.  
+  **Request**:  
+  ```json
+  {
+    "username": "string",
+    "password": "string",
+    "email": "string"
+  }
+  ```
+  **Responses**:  
+  - **200 OK**: User created successfully, returns `{"id": <user_id>}`.  
+  - **400 Bad Request**: Invalid payload or email already in use.  
+  - **401 Unauthorized**: User is already logged in.  
+  - **405 Method Not Allowed**: The method is not `POST`.  
 
 - **POST** `/login-user`  
-  Authenticate a user and initiate a session.
+  **Description**: Authenticates a user and starts a session.  
+  **Request**:  
+  ```json
+  {
+    "email": "string",
+    "password": "string"
+  }
+  ```
+  **Responses**:  
+  - **200 OK**: Successful login, sets authentication cookies.  
+  - **400 Bad Request**: Invalid payload or email format.  
+  - **401 Unauthorized**: Invalid credentials.  
+  - **405 Method Not Allowed**: The method is not `POST`.  
 
 - **GET** `/logout-user`  
-  End the session for the logged-in user.
+  **Description**: Ends the user's session by clearing authentication cookies.  
+  **Responses**:  
+  - **200 OK**: Successfully logged out.  
+  - **401 Unauthorized**: User is not logged in.  
+
+- **GET** `/isActive`  
+  **Description**: Checks if the current user session is active.  
+  **Responses**:  
+  - **200 OK**: Returns `{"active": true}` if the user is active, otherwise `{"active": false}`.  
+
+- **GET** `/isActiveID`  
+  **Description**: Checks if a user identified by their ID is active.  
+  **Responses**:  
+  - **200 OK**: Returns `{"active": true}` if the user is active, otherwise `{"active": false}`.  
+  - **400 Bad Request**: Invalid user ID.  
+  - **401 Unauthorized**: User is not logged in.  
 
 ### Payment Management
-> These endpoints require the user to be logged in.
 
 - **POST** `/create-checkout-session`  
-  Initiate a Stripe subscription checkout session.
+  **Description**: Initiates a Stripe subscription checkout session.  
+  **Responses**:  
+  - **303 See Other**: Redirects to the Stripe Checkout session URL.  
+  - **401 Unauthorized**: User is not logged in.  
+  - **500 Internal Server Error**: Failed to create the session.  
 
 - **GET** `/create-portal-session`  
-  Create a Stripe Billing portal session for subscription management.
+  **Description**: Creates a Stripe Billing portal session for managing subscriptions.  
+  **Responses**:  
+  - **303 See Other**: Redirects to the Stripe Billing portal.  
+  - **401 Unauthorized**: User is not logged in.  
+  - **400 Bad Request**: Invalid customer ID.  
+
+- **POST** `/multibanco`  
+  **Description**: Creates a payment session using the Multibanco method for subscription payments.  
+  **Responses**:  
+  - **303 See Other**: Redirects to the Stripe Checkout session URL.  
+  - **400 Bad Request**: Invalid payload or user information.  
+  - **401 Unauthorized**: User is not logged in.  
+  - **500 Internal Server Error**: Failed to create the session.  
 
 ### Webhooks
+
 - **POST** `/webhook`  
-  Process Stripe webhook events related to subscriptions, payments, and customer management.
+  **Description**: Processes Stripe webhook events related to subscriptions, payments, and customer management.  
+  **Responses**:  
+  - **200 OK**: Webhook processed successfully.  
+  - **400 Bad Request**: Invalid webhook payload.  
 
 ### System Health
+
 - **GET** `/health`  
-  Verify the operational status of the system.
+  **Description**: Checks the operational status of the system.  
+  **Responses**:  
+  - **200 OK**: System is operational.  
 
 ### System
+
 - **GET** `/getPrecoSub`  
-  Get price of subscription
-
-
+  **Description**: Retrieves the price of the subscription.  
+  **Responses**:  
+  - **200 OK**: Returns the subscription price.  
+  - **500 Internal Server Error**: Failed to retrieve the price.  
 
 ## .env Configuration
 
@@ -83,7 +148,7 @@
   Similar to `OnlyStartOnDayX`, but access is only granted once the `STARTING_DATE` is reached.
 
 - **Mouros**  
-  Mouros is a specific type of subscription that the idea is you pay a full year even if you just started it or finishing, first year is a defined price but next ones have a coupon added, the motivation behing this project
+  Mouros is a specific type of subscription that the idea is you pay a full year even if you just started it or finishing, first year is a defined price but next ones have a coupon added, the motivation behind this project.
 
 ## Setup Instructions
 
