@@ -30,15 +30,10 @@ import (
 //falta joia (codigo desconto)
 
 var domain = os.Getenv("DOMAIN")
-var Permissions = permissions{}
-
 var success_path = ""
 var cancel_path = ""
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
-	// For demonstration purposes, we're using the Checkout session to retrieve the customer ID.
-	// Typically this is stored alongside the authenticated user in your database.
-
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)

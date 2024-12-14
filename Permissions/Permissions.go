@@ -1,4 +1,4 @@
-package Tokenize
+package Permissions
 
 import (
 	"fmt"
@@ -6,11 +6,8 @@ import (
 	"github.com/Maruqes/Tokenize/database"
 )
 
-type permissions struct {
-}
-
 // only all:all perms can do this
-func (*permissions) CreatePermission(name, permission string) error {
+func CreatePermission(name, permission string) error {
 	permission_type, err := database.GetPermissionWithName(name)
 	if permission_type.ID != -1 || err != nil {
 		return fmt.Errorf("permission %s already exists", name)
@@ -28,7 +25,7 @@ func (*permissions) CreatePermission(name, permission string) error {
 	return nil
 }
 
-func (*permissions) DeletePermission(id int) error {
+func DeletePermission(id int) error {
 	exist := database.CheckPermissionID(id)
 	if !exist {
 		return fmt.Errorf("permission %d does not exist", id)
@@ -41,7 +38,11 @@ func (*permissions) DeletePermission(id int) error {
 	return nil
 }
 
-func (*permissions) AddUserPermission(userID, permissionID int) error {
+func GetPermissions() ([]database.Permission, error) {
+	return database.GetPermissions()
+}
+
+func AddUserPermission(userID, permissionID int) error {
 	exist_id, err := database.CheckIfUserIDExists(userID)
 	if err != nil || !exist_id {
 		return fmt.Errorf("user %d does not exist", userID)
@@ -61,7 +62,7 @@ func (*permissions) AddUserPermission(userID, permissionID int) error {
 	return nil
 }
 
-func (*permissions) RemoveUserPermission(userID, permissionID int) error {
+func RemoveUserPermission(userID, permissionID int) error {
 	exist_id, err := database.CheckIfUserIDExists(userID)
 	if err != nil || !exist_id {
 		return fmt.Errorf("user %d does not exist", userID)
@@ -77,7 +78,7 @@ func (*permissions) RemoveUserPermission(userID, permissionID int) error {
 }
 
 // only the own user or all:all perms can do this
-func (*permissions) GetUserPermissions(userID int) ([]database.Permission, error) {
+func GetUserPermissions(userID int) ([]database.Permission, error) {
 	exist_id, err := database.CheckIfUserIDExists(userID)
 	if err != nil || !exist_id {
 		return []database.Permission{}, fmt.Errorf("user %d does not exist", userID)
@@ -86,7 +87,7 @@ func (*permissions) GetUserPermissions(userID int) ([]database.Permission, error
 	return database.GetUserPermissions(userID)
 }
 
-func (p *permissions) HasPermission(userID int, requiredPermission string) bool {
+func HasPermission(userID int, requiredPermission string) bool {
 	userPermissions, err := database.GetUserPermissions(userID)
 	if err != nil {
 		return false
@@ -98,4 +99,8 @@ func (p *permissions) HasPermission(userID int, requiredPermission string) bool 
 		}
 	}
 	return false
+}
+
+func GetAllUsersPermissions() ([]database.Permission, error) {
+	return database.GetAllUsersPermissions()
 }

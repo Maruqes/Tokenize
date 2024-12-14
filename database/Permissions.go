@@ -154,3 +154,45 @@ func GetPermissionWithPermission(permission_type_string string) (Permission, err
 	}
 	return permission, nil
 }
+
+func GetPermissions() ([]Permission, error) {
+	query := `SELECT id, name, permission FROM permissions;`
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var permissions []Permission
+	for rows.Next() {
+		var permission Permission
+		if err := rows.Scan(&permission.ID, &permission.Name, &permission.Permission); err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, permission)
+	}
+	return permissions, nil
+}
+
+func GetAllUsersPermissions() ([]Permission, error) {
+	query := `
+	SELECT permissions.id, permissions.name, permissions.permission
+	FROM permissions
+	JOIN user_permissions ON permissions.id = user_permissions.permission_id;
+	`
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var permissions []Permission
+	for rows.Next() {
+		var permission Permission
+		if err := rows.Scan(&permission.ID, &permission.Name, &permission.Permission); err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, permission)
+	}
+	return permissions, nil
+}
