@@ -27,5 +27,3 @@ go.work.sum
 users.db
 logs.txt
 logs.log
-cert.pem
-key.pem

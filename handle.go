@@ -71,7 +71,11 @@ func handlePaymentSuccess(invoice stripe.Invoice) error {
 
 	//this is mouros specific
 	if invoice.AmountPaid != 0 && types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.MourosSubscription {
-		mourosSub.SetCoupon(invoice.Subscription.ID)
+		err := mourosSub.SetCoupon(invoice.Subscription.ID)
+		if err != nil {
+			log.Printf("Error setting coupon: %v", err)
+			return fmt.Errorf("error setting coupon call services")
+		}
 	}
 
 	fmt.Printf("\n\nSubscription PRICE ID: %s\n", subscriptionID)

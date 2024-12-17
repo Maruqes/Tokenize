@@ -121,6 +121,7 @@ func invoice_created(w http.ResponseWriter, event stripe.Event) {
 	err = handlePaymentSuccess(invoice)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error handling payment success: %v\n", err)
+		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
