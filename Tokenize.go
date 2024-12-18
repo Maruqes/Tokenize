@@ -19,6 +19,7 @@ import (
 	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
 	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
+	"github.com/rs/cors"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
@@ -464,9 +465,16 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	Mux.HandleFunc("/health", healthCheck)
 	Mux.HandleFunc("/getPrecoSub", getPrecoSub)
 
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Permitir todas as origens (usar domínio específico em produção)
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}).Handler(Mux)
+
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
 
 	// Start HTTPS server
-	log.Fatal(http.ListenAndServe(addr, nil))
+	log.Fatal(http.ListenAndServe(addr, corsHandler))
 }
