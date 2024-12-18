@@ -33,6 +33,11 @@ var success_path = ""
 var cancel_path = ""
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
@@ -123,6 +128,11 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
@@ -181,19 +191,10 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginUsr(w http.ResponseWriter, r *http.Request) {
-	origin := r.Header.Get("Origin")
-
-	if !functions.CheckOrigin(origin, Origins) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
 		http.Error(w, "Invalid origin", http.StatusUnauthorized)
 		return
 	}
-
-	// Set CORS headers for valid origins
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -235,17 +236,19 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "id",
 		Value:    strconv.Itoa(usr.ID),
-		Secure:   true,
+		Secure:   true, // Required for SameSite=None
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode, // Allow cross-site cookie sharing
 		Expires:  time.Now().Add(5 * 24 * time.Hour),
 	})
 
+	// Set the "token" cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    token,
-		Secure:   true,
+		Secure:   true, // Required for SameSite=None
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode, // Allow cross-site cookie sharing
 		Expires:  time.Now().Add(5 * 24 * time.Hour),
 	})
 
@@ -255,6 +258,11 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	login_Q := Login.CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
@@ -277,17 +285,20 @@ func logoutUsr(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "id",
 		Value:    "",
-		MaxAge:   -1,
-		Secure:   true,
+		MaxAge:   -1,   // Marks the cookie for deletion
+		Secure:   true, // Must match the original cookie's attributes
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode, // Must match the original cookie's SameSite
 	})
 
+	// Clear the "token" cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",
-		MaxAge:   -1,
-		Secure:   true,
+		MaxAge:   -1,   // Marks the cookie for deletion
+		Secure:   true, // Must match the original cookie's attributes
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode, // Must match the original cookie's SameSite
 	})
 
 	Logs.LogMessage("User logged out with id " + strconv.Itoa(idInt))
@@ -303,6 +314,11 @@ var PRECO_SUB uint64
 var lastTimePrecoSub time.Time
 
 func getPrecoSub(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	if time.Since(lastTimePrecoSub) > 10*time.Minute {
 		priceStripe, err := price.Get(os.Getenv("SUBSCRIPTION_PRICE_ID"), nil)
 		if err != nil {
@@ -327,6 +343,16 @@ func getPrecoSub(w http.ResponseWriter, r *http.Request) {
 }
 
 func isActive(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if val, err := Login.IsUserActiveRequest(r); !val || err != nil {
 		w.Write([]byte(`{"active": false}`))
@@ -336,6 +362,11 @@ func isActive(w http.ResponseWriter, r *http.Request) {
 }
 
 func isActiveID(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if !Login.CheckToken(r) {
 		w.Write([]byte(`{"active": false}`))
@@ -360,11 +391,10 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 }
 
 var Mux *http.ServeMux
-var Origins []string
 
 // set port like "4242"
 func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments, origins []string) {
-	Origins = origins
+	functions.Origins = origins
 	Mux = http.NewServeMux()
 
 	fmt.Println(functions.GetStringForSubscription() + "\n")

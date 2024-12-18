@@ -34,6 +34,10 @@ func mbwaySubscription(w http.ResponseWriter, r *http.Request) {
 }
 
 func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
 	types "github.com/Maruqes/Tokenize/Types"
@@ -82,6 +83,16 @@ func createCheckoutStruct(finalCustomer *stripe.Customer) *stripe.CheckoutSessio
 }
 
 func CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
+
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

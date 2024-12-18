@@ -2,6 +2,7 @@ package functions
 
 import (
 	"log"
+	"net/http"
 	"net/mail"
 	"os"
 	"strconv"
@@ -198,9 +199,19 @@ func DefinePaymentMethod(customerID string, paymentIntentID string) error {
 	return nil
 }
 
-func CheckOrigin(origin string, allowedOrigins []string) bool {
+var Origins []string
+
+func CheckOrigin(r *http.Request, allowedOrigins []string, w http.ResponseWriter) bool {
+	origin := r.Header.Get("Origin")
 	for _, o := range allowedOrigins {
 		if origin == o {
+
+			// Set CORS headers for valid origins
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
 			return true
 		}
 	}

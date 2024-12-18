@@ -42,6 +42,11 @@ func InitOnDayXNoSubCheckouts(d string, sp string, cp string, gtos types.TypeOfS
 
 func PaymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
+	if !functions.CheckOrigin(r, functions.Origins, w) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
@@ -118,7 +123,6 @@ func PaymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
-
 	}
 
 	// Cria a Checkout Session
