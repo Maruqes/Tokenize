@@ -376,7 +376,7 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 var Mux *http.ServeMux
 
 // set port like "4242"
-func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
+func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments, origins []string) {
 	Mux = http.NewServeMux()
 
 	fmt.Println(functions.GetStringForSubscription() + "\n")
@@ -466,10 +466,10 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	Mux.HandleFunc("/getPrecoSub", getPrecoSub)
 
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Permitir todas as origens (usar domínio específico em produção)
+		AllowedOrigins:   origins, // Specify exact origins
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
-		AllowCredentials: true,
+		AllowCredentials: true, // Allows cookies and credentials
 	}).Handler(Mux)
 
 	addr := "0.0.0.0:" + port

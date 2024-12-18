@@ -9,7 +9,7 @@ import (
 )
 
 func TestThis(t *testing.T) {
-	Init("4242", "/success.html", "/cancel.html", types.TypeOfSubscriptionValues.MourosSubscription, []types.ExtraPayments{types.ExtraPaymentsValues.Multibanco})
+	Init("4242", "/success.html", "/cancel.html", types.TypeOfSubscriptionValues.MourosSubscription, []types.ExtraPayments{types.ExtraPaymentsValues.Multibanco}, []string{"http://localhost:3000"})
 }
 
 func TestPermission7(t *testing.T) {
