@@ -197,3 +197,12 @@ func DefinePaymentMethod(customerID string, paymentIntentID string) error {
 	}
 	return nil
 }
+
+func CheckOrigin(origin string, allowedOrigins []string) bool {
+	for _, o := range allowedOrigins {
+		if origin == o {
+			return true
+		}
+	}
+	return false
+}

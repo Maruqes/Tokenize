@@ -181,6 +181,13 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginUsr(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+
+	if !functions.CheckOrigin(origin, Origins) {
+		http.Error(w, "Invalid origin", http.StatusUnauthorized)
+		return
+	}
+
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
@@ -238,34 +245,6 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 	Logs.LogMessage("User logged in with id/name " + strconv.Itoa(usr.ID) + "/" + usr.Name)
 
 	w.WriteHeader(http.StatusOK)
-}
-
-func testLogin(w http.ResponseWriter, r *http.Request) {
-	login_Q := Login.CheckToken(r)
-	if !login_Q {
-		http.Error(w, "Not logged in", http.StatusUnauthorized)
-		return
-	}
-
-	id, err := r.Cookie("id")
-	if err != nil {
-		http.Error(w, "Error getting id", http.StatusInternalServerError)
-		return
-	}
-
-	idInt, err := strconv.Atoi(id.Value)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
-	}
-
-	usr, err := database.GetUser(idInt)
-	if err != nil {
-		http.Error(w, "Error getting user", http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte("Logged in as " + usr.Name))
 }
 
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
@@ -374,9 +353,11 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 }
 
 var Mux *http.ServeMux
+var Origins []string
 
 // set port like "4242"
 func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments, origins []string) {
+	Origins = origins
 	Mux = http.NewServeMux()
 
 	fmt.Println(functions.GetStringForSubscription() + "\n")
