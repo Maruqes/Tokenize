@@ -27,8 +27,6 @@ import (
 	"github.com/stripe/stripe-go/v81/webhook"
 )
 
-//falta joia (codigo desconto)
-
 var domain = os.Getenv("DOMAIN")
 var success_path = ""
 var cancel_path = ""
@@ -374,8 +372,12 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"active": true}`))
 }
 
+var Mux *http.ServeMux
+
 // set port like "4242"
 func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
+	Mux = http.NewServeMux()
+
 	fmt.Println(functions.GetStringForSubscription() + "\n")
 	success_path = success
 	cancel_path = cancel
@@ -412,16 +414,16 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	if typeOfSubscription == types.TypeOfSubscriptionValues.Normal {
-		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
+		Mux.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
 
 	} else if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayX {
-		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
+		Mux.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
 
 	} else if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
-		http.HandleFunc("/create-checkout-session", startOnDayXNoSub.PaymentToCreateSubscriptionXDay) //subscricao
+		Mux.HandleFunc("/create-checkout-session", startOnDayXNoSub.PaymentToCreateSubscriptionXDay) //subscricao
 
 	} else if typeOfSubscription == types.TypeOfSubscriptionValues.MourosSubscription {
-		http.HandleFunc("/create-checkout-session", mourosSub.MourosSubscription) //subscricao
+		Mux.HandleFunc("/create-checkout-session", mourosSub.MourosSubscription) //subscricao
 
 	} else {
 		log.Fatal("Invalid type of subscription")
@@ -429,9 +431,9 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 
 	for i := 0; i < len(extraPayments); i++ {
 		if extraPayments[i] == types.ExtraPaymentsValues.MBWay {
-			http.HandleFunc("/mbway", mbwaySubscription)
+			Mux.HandleFunc("/mbway", mbwaySubscription)
 		} else if extraPayments[i] == types.ExtraPaymentsValues.Multibanco {
-			http.HandleFunc("/multibanco", multibancoSubscription)
+			Mux.HandleFunc("/multibanco", multibancoSubscription)
 		} else {
 			log.Fatal("Invalid extra payment")
 		}
@@ -441,26 +443,26 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 		panic("Extra payments are not supported with this type of subscription")
 	}
 
-	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
-	http.HandleFunc("/webhook", handleWebhook)
+	Mux.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
+	Mux.HandleFunc("/webhook", handleWebhook)
 
 	//testing
-	// http.HandleFunc("/testeLOGIN", testLogin)
+	// Mux.HandleFunc("/testeLOGIN", testLogin)
 
 	//auth
-	http.HandleFunc("/create-user", createUser)
-	http.HandleFunc("/login-user", loginUsr)
-	http.HandleFunc("/logout-user", logoutUsr)
-	http.HandleFunc("/isActive", isActive)
-	http.HandleFunc("/isActiveID", isActiveID)
+	Mux.HandleFunc("/create-user", createUser)
+	Mux.HandleFunc("/login-user", loginUsr)
+	Mux.HandleFunc("/logout-user", logoutUsr)
+	Mux.HandleFunc("/isActive", isActive)
+	Mux.HandleFunc("/isActiveID", isActiveID)
 
 	//admin
-	// http.HandleFunc("/pay-offline", payOffline)
-	// http.HandleFunc("/get-offline-id", getOfflineWithID)
-	// http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
+	// Mux.HandleFunc("/pay-offline", payOffline)
+	// Mux.HandleFunc("/get-offline-id", getOfflineWithID)
+	// Mux.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
 
-	http.HandleFunc("/health", healthCheck)
-	http.HandleFunc("/getPrecoSub", getPrecoSub)
+	Mux.HandleFunc("/health", healthCheck)
+	Mux.HandleFunc("/getPrecoSub", getPrecoSub)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
