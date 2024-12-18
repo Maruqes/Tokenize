@@ -462,6 +462,7 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
 
+	
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
 
