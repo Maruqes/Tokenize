@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 type Date struct {
@@ -11,10 +12,35 @@ type Date struct {
 	Year  int
 }
 
+func StringToDate(date string) (Date, error) {
+	var dateObj Date
+	_, err := fmt.Sscanf(date, "%d/%d/%d", &dateObj.Day, &dateObj.Month, &dateObj.Year)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if dateObj.Day < 1 || dateObj.Day > 31 {
+		return dateObj, fmt.Errorf("invalid day")
+	}
+	if dateObj.Month < 1 || dateObj.Month > 12 {
+		return dateObj, fmt.Errorf("invalid month")
+	}
+	if dateObj.Year < 1900 || dateObj.Year > 3000 {
+		return dateObj, fmt.Errorf("invalid year")
+	}
+
+	return dateObj, nil
+}
+
+func DateFromUnix(unix int64) Date {
+	t := time.Unix(unix, 0).UTC()
+	return Date{Day: t.Day(), Month: int(t.Month()), Year: t.Year()}
+}
+
 type OfflinePayment struct {
 	UserID        int
 	DateOfPayment Date
-	Quantity      int
+	End_date      Date
 }
 
 func CreateOfflineTable() {
@@ -23,7 +49,7 @@ func CreateOfflineTable() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT,
 		date_of_payment TEXT,
-		quantity INTEGER,
+		end_date TEXT,
 		FOREIGN KEY(user_id) REFERENCES users(id)
     );
     `
@@ -33,10 +59,11 @@ func CreateOfflineTable() {
 	}
 }
 
-func AddOfflinePayment(user_id int, date_of_payment Date, quantity int) error {
+func AddOfflinePayment(user_id int, date_of_payment Date, end_date Date) error {
 	date_string := fmt.Sprintf("%d-%02d-%02d", date_of_payment.Year, date_of_payment.Month, date_of_payment.Day)
-	query := `INSERT INTO offline_payments (user_id, date_of_payment, quantity) VALUES (?, ?, ?);`
-	_, err := db.Exec(query, user_id, date_string, quantity)
+	end_date_string := fmt.Sprintf("%d-%02d-%02d", end_date.Year, end_date.Month, end_date.Day)
+	query := `INSERT INTO offline_payments (user_id, date_of_payment, end_date) VALUES (?, ?, ?);`
+	_, err := db.Exec(query, user_id, date_string, end_date_string)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,16 +97,18 @@ func GetOfflinePaymentByID(user_id int) ([]OfflinePayment, error) {
 	for rows.Next() {
 		var id int
 		var user_id int
-		var date_of_payment string
-		var quantity int
-		err = rows.Scan(&id, &user_id, &date_of_payment, &quantity)
+		var date_of_payment_string string
+		var end_date_string string
+		err = rows.Scan(&id, &user_id, &date_of_payment_string, &end_date_string)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(id, user_id, date_of_payment, quantity)
 		date := Date{}
-		fmt.Sscanf(date_of_payment, "%d-%d-%d", &date.Year, &date.Month, &date.Day)
-		offlinePayments = append(offlinePayments, OfflinePayment{UserID: user_id, DateOfPayment: date, Quantity: quantity})
+		end_date := Date{}
+		fmt.Sscanf(date_of_payment_string, "%d-%d-%d", &date.Year, &date.Month, &date.Day)
+		fmt.Sscanf(end_date_string, "%d-%d-%d", &end_date.Year, &end_date.Month, &end_date.Day)
+
+		offlinePayments = append(offlinePayments, OfflinePayment{UserID: user_id, DateOfPayment: date, End_date: end_date})
 	}
 	return offlinePayments, nil
 }

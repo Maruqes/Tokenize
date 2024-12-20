@@ -19,6 +19,7 @@ func CheckIfEmailIsBeingUsedInStripe(email string) bool {
 	}
 	i := customer.List(params)
 	for i.Next() {
+		fmt.Println(i.Customer().Email)
 		if i.Customer().Email == email {
 			return true
 		}

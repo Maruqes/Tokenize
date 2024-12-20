@@ -19,6 +19,7 @@ import (
 	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
 	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
+	"github.com/Maruqes/Tokenize/offline"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
@@ -444,8 +445,6 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
 
-	//testing
-	// http.HandleFunc("/testeLOGIN", testLogin)
 
 	//auth
 	http.HandleFunc("/create-user", createUser)
@@ -455,9 +454,8 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/isActiveID", isActiveID)
 
 	//admin
-	// http.HandleFunc("/pay-offline", payOffline)
-	// http.HandleFunc("/get-offline-id", getOfflineWithID)
-	// http.HandleFunc("/get-offline-last-time", getLastTimeOfflineRequest)
+	http.HandleFunc("/pay-offline", offline.ActivateAccountOfflineRequest)
+	http.HandleFunc("/is-offline", offline.ActivateAccountOfflineRequest)
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
