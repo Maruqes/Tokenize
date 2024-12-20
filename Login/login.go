@@ -7,11 +7,9 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
 
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/database"
-	"github.com/Maruqes/Tokenize/offline"
 )
 
 type Login struct {
@@ -136,11 +134,6 @@ func IsUserActiveRequest(r *http.Request) (bool, error) {
 	login, ok := loginStore.get(id)
 	if !ok || login.Token != token {
 		return false, fmt.Errorf("invalid token")
-	}
-
-	if off, err := offline.IsAccountActivatedOffline(id); 
-		time.Now().Unix() < time.Date(off.End_date.Year, time.Month(off.End_date.Month), off.End_date.Day, 0, 0, 0, 0, time.UTC).Unix() || err != nil {
-		return true, nil
 	}
 
 	return functions.DoesUserHaveActiveSubscription(id)

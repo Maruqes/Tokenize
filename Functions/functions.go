@@ -10,6 +10,7 @@ import (
 
 	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
+	"github.com/Maruqes/Tokenize/offline"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
@@ -140,6 +141,10 @@ func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
 	}
 
 	if usr.IsActive {
+		return true, nil
+	}
+
+	if off, err := offline.IsAccountActivatedOffline(usr.ID); time.Now().Unix() < time.Date(off.End_date.Year, time.Month(off.End_date.Month), off.End_date.Day, 0, 0, 0, 0, time.UTC).Unix() || err != nil {
 		return true, nil
 	}
 

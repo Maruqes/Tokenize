@@ -358,17 +358,22 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := r.Cookie("id")
-	if err != nil {
-		http.Error(w, "Error getting id", http.StatusInternalServerError)
+	if val, err := Login.IsUserActiveRequest(r); !val || err != nil {
+		w.Write([]byte(`{"active": false}`))
 		return
 	}
-	idInt, err := strconv.Atoi(id.Value)
+
+	var requestData struct {
+		ID int `json:"id"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	if val, err := Login.IsUserActive(idInt); !val || err != nil {
+
+	if val, err := Login.IsUserActive(requestData.ID); !val || err != nil {
 		w.Write([]byte(`{"active": false}`))
 		return
 	}
@@ -445,7 +450,6 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
 
-
 	//auth
 	http.HandleFunc("/create-user", createUser)
 	http.HandleFunc("/login-user", loginUsr)
@@ -455,7 +459,7 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 
 	//admin
 	http.HandleFunc("/pay-offline", offline.ActivateAccountOfflineRequest)
-	http.HandleFunc("/is-offline", offline.ActivateAccountOfflineRequest)
+	http.HandleFunc("/is-offline", offline.GetLastEndDate)
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
