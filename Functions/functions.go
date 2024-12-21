@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"fmt"
 	"log"
 	"net/mail"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
 	"github.com/stripe/stripe-go/v81/paymentintent"
+	"github.com/stripe/stripe-go/v81/subscription"
 )
 
 func GenerateUUID() string {
@@ -201,4 +203,42 @@ func DefinePaymentMethod(customerID string, paymentIntentID string) error {
 		return err
 	}
 	return nil
+}
+
+func GetEndDateUserStripe(userId int) (database.Date, error) {
+	user, err := database.GetUser(userId)
+	if err != nil {
+		return database.Date{}, err
+	}
+
+	params := &stripe.SubscriptionListParams{
+		Customer: stripe.String(user.StripeID),
+		Status:   stripe.String("all"), // Include all statuses to catch trials
+	}
+
+	var lastEnd int64
+	lastEnd = 0
+
+	i := subscription.List(params)
+	for i.Next() {
+		s := i.Subscription()
+
+		// Consider the greater of CurrentPeriodEnd, CancelAt, and TrialEnd
+		subEnd := s.CurrentPeriodEnd
+		if s.TrialEnd > subEnd {
+			subEnd = s.TrialEnd
+		}
+		if s.CancelAt > 0 && s.CancelAt < subEnd {
+			subEnd = s.CancelAt // Use the earlier cancellation date if it exists
+		}
+		if subEnd > lastEnd {
+			lastEnd = subEnd
+		}
+	}
+
+	if lastEnd == 0 {
+		return database.Date{}, fmt.Errorf("no end date available")
+	}
+
+	return database.DateFromUnix(lastEnd), nil
 }

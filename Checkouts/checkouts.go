@@ -32,6 +32,7 @@ func CheckIfIDBeingUsedInStripe(id string) bool {
 	i := customer.List(params)
 	for i.Next() {
 		if i.Customer().Metadata["tokenize_id"] == id {
+			fmt.Println(i.Customer().ID)
 			return true
 		}
 	}
@@ -70,7 +71,7 @@ func HandleCreatingCustomer(usr database.User, customer_id string) (*stripe.Cust
 		}
 
 		if CheckIfIDBeingUsedInStripe(customer_id) {
-			log.Printf("id already in use")
+			log.Printf("%s", "id already in use by "+customer_id)
 			return nil, fmt.Errorf("id already in use BIG PROBLEM")
 		}
 

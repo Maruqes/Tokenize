@@ -354,12 +354,12 @@ func isActive(w http.ResponseWriter, r *http.Request) {
 func isActiveID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if !Login.CheckToken(r) {
-		w.Write([]byte(`{"active": false}`))
+		w.Write([]byte(`You are not logged in`))
 		return
 	}
 
 	if val, err := Login.IsUserActiveRequest(r); !val || err != nil {
-		w.Write([]byte(`{"active": false}`))
+		w.Write([]byte(`Your user is not active`))
 		return
 	}
 
@@ -415,7 +415,7 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 	startOnDayXNoSub.InitOnDayXNoSubCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
 	mourosSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
 
-	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	if typeOfSubscription == types.TypeOfSubscriptionValues.Normal {
 		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
@@ -463,6 +463,9 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
+
+	//testing
+	http.HandleFunc("/testLastDate", testLastDate)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)

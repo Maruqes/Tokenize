@@ -10,6 +10,7 @@ import (
 	"github.com/Maruqes/Tokenize/database"
 )
 
+// does not check if the user is already activated
 func ActivateAccountOfflineRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
