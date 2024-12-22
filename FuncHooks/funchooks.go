@@ -2,6 +2,8 @@ package funchooks
 
 import "net/http"
 
+//there functions will be called before the father function	is called
+
 var CreateUser_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var CreatePortalSession_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var Checkout_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
