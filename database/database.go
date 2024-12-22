@@ -17,6 +17,7 @@ type User struct {
 	StripeID string
 	Email    string
 	Name     string
+  isProhibited bool
 	IsActive bool
 }
 
@@ -28,6 +29,7 @@ func CreateTable() {
         email TEXT NOT NULL UNIQUE,
         name TEXT NOT NULL, 
         password TEXT,
+    is_prohibited BOOLEAN DEFAULT 0,
 		is_active BOOLEAN DEFAULT 0
     );
     `
@@ -55,6 +57,36 @@ func Init() {
 	}
 	CreateTable()
 }
+
+func ProhibitUser(id int) error {
+  _, err := db.Exec(`
+    UPDATE users
+    SET is_prohibited = 1
+    WHERE id = ?
+  `, id)
+  return err
+}
+
+func UnprohibitUser(id int) error {
+  _, err := db.Exec(`
+    UPDATE users
+    SET is_prohibited = 0
+    WHERE id = ?
+  `, id)
+  return err
+}
+
+func CheckIfUserIsProhibited(id int) (bool, error) {
+  row := db.QueryRow(`
+    SELECT is_prohibited
+    FROM users
+    WHERE id = ?
+  `, id)
+  var isProhibited bool
+  err := row.Scan(&isProhibited)
+  return isProhibited, err
+}
+
 
 func CheckIfCanUserBeAdded(email, name string) (bool, error) {
 	row := db.QueryRow(`
@@ -127,29 +159,29 @@ func CheckIfUserIDExists(id int) (bool, error) {
 
 func GetUser(id int) (User, error) {
 	row := db.QueryRow(`
-		SELECT id, stripe_id, email, name, is_active
+		SELECT id, stripe_id, email, name, is_prohibited, is_active
 		FROM users
 		WHERE id = ?
 	`, id)
 	var user User
-	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.isProhibited, &user.IsActive)
 	return user, err
 }
 
 func GetUserByEmail(email string) (User, error) {
 	row := db.QueryRow(`
-		SELECT id, stripe_id, email, name, is_active
+		SELECT id, stripe_id, email, name, is_prohibited, is_active
 		FROM users
 		WHERE email = ?
 	`, email)
 	var user User
-	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.isProhibited, &user.IsActive)
 	return user, err
 }
 
 func GetAllUsers() ([]User, error) {
 	rows, err := db.Query(`
-		SELECT id, stripe_id, email, name, is_active
+		SELECT id, stripe_id, email, name,is_prohibited, is_active
 		FROM users
 	`)
 	if err != nil {
@@ -160,7 +192,7 @@ func GetAllUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		err := rows.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsActive)
+		err := rows.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.isProhibited, &user.IsActive)
 		if err != nil {
 			return nil, err
 		}

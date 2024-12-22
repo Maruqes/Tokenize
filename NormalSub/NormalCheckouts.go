@@ -9,6 +9,7 @@ import (
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
 	types "github.com/Maruqes/Tokenize/Types"
+	"github.com/Maruqes/Tokenize/UserFuncs"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 )
@@ -91,6 +92,12 @@ func CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	// Check if user is prohibited and respond accordingly
+	prohibited := UserFuncs.CheckProhibitedUser(w, r)
+	if prohibited {
 		return
 	}
 

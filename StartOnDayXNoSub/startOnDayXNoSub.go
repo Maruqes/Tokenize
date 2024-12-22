@@ -13,6 +13,7 @@ import (
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
 	types "github.com/Maruqes/Tokenize/Types"
+	"github.com/Maruqes/Tokenize/UserFuncs"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
@@ -53,6 +54,11 @@ func PaymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is prohibited and respond accordingly
+	prohibited := UserFuncs.CheckProhibitedUser(w, r)
+	if prohibited {
+		return
+	}
 	//get id
 	customer_id_cookie, err := r.Cookie("id")
 	if err != nil {
@@ -118,7 +124,6 @@ func PaymentToCreateSubscriptionXDay(w http.ResponseWriter, r *http.Request) {
 
 		SuccessURL: stripe.String(domain + success_path),
 		CancelURL:  stripe.String(domain + cancel_path),
-
 	}
 
 	// Cria a Checkout Session

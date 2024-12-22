@@ -13,6 +13,7 @@ import (
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
 	mourosSub "github.com/Maruqes/Tokenize/MourosSub"
+	"github.com/Maruqes/Tokenize/UserFuncs"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/price"
@@ -58,6 +59,12 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	// Check if user is prohibited and respond accordingly
+	prohibited := UserFuncs.CheckProhibitedUser(w, r)
+	if prohibited {
 		return
 	}
 
