@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	"github.com/Maruqes/Tokenize/database"
 )
 
@@ -15,6 +16,12 @@ func ActivateAccountOfflineRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
+	}
+
+	if funchooks.PayOffline_UserFunc != nil {
+		if funchooks.PayOffline_UserFunc(w, r) {
+			return
+		}
 	}
 
 	var credentials struct {
@@ -86,6 +93,13 @@ func GetLastEndDate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+
+	if funchooks.IsOffline_UserFunc != nil {
+		if funchooks.IsOffline_UserFunc(w, r) {
+			return
+		}
+	}
+
 	var credentials struct {
 		Email  string `json:"email"`
 		Secret string `json:"secret"`

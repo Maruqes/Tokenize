@@ -11,6 +11,7 @@ import (
 	"time"
 
 	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
@@ -35,6 +36,13 @@ var success_path = ""
 var cancel_path = ""
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
+
+	if funchooks.CreatePortalSession_UserFunc != nil {
+		if funchooks.CreatePortalSession_UserFunc(w, r) {
+			return
+		}
+	}
+
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
@@ -130,6 +138,12 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if funchooks.CreateUser_UserFunc != nil {
+		if funchooks.CreateUser_UserFunc(w, r) {
+			return
+		}
+	}
+
 	login := Login.CheckToken(r)
 	if login {
 		http.Error(w, "Already logged in, cant create an account", http.StatusUnauthorized)
@@ -187,6 +201,13 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+
+	if funchooks.LoginUser_UserFunc != nil {
+		if funchooks.LoginUser_UserFunc(w, r) {
+			return
+		}
+	}
+
 	var credentials struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -271,6 +292,13 @@ func testLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
+
+	if funchooks.LogoutUser_UserFunc != nil {
+		if funchooks.LogoutUser_UserFunc(w, r) {
+			return
+		}
+	}
+
 	login_Q := Login.CheckToken(r)
 	if !login_Q {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
@@ -435,7 +463,7 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 
 	for i := 0; i < len(extraPayments); i++ {
 		if extraPayments[i] == types.ExtraPaymentsValues.MBWay {
-			http.HandleFunc("/mbway", mbwaySubscription)
+			// http.HandleFunc("/mbway", mbwaySubscription)
 		} else if extraPayments[i] == types.ExtraPaymentsValues.Multibanco {
 			http.HandleFunc("/multibanco", multibancoSubscription)
 		} else {

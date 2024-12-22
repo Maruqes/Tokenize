@@ -9,6 +9,7 @@ import (
 	"time"
 
 	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	Logs "github.com/Maruqes/Tokenize/Logs"
@@ -93,6 +94,12 @@ func MourosSubscription(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
+	}
+
+	if funchooks.Checkout_UserFunc != nil {
+		if funchooks.Checkout_UserFunc(w, r) {
+			return
+		}
 	}
 
 	login := Login.CheckToken(r)

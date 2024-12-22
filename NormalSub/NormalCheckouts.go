@@ -6,6 +6,7 @@ import (
 	"os"
 
 	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
 	types "github.com/Maruqes/Tokenize/Types"
@@ -87,6 +88,12 @@ func CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
+	}
+
+	if funchooks.Checkout_UserFunc != nil {
+		if funchooks.Checkout_UserFunc(w, r) {
+			return
+		}
 	}
 
 	login := Login.CheckToken(r)

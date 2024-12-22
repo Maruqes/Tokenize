@@ -9,6 +9,7 @@ import (
 	"time"
 
 	checkouts "github.com/Maruqes/Tokenize/Checkouts"
+	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
@@ -39,6 +40,12 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
+	}
+
+	if funchooks.Multibanco_UserFunc != nil {
+		if funchooks.Multibanco_UserFunc(w, r) {
+			return
+		}
 	}
 
 	err := r.ParseForm()
