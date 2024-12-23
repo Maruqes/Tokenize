@@ -23,7 +23,7 @@ func GetUserByEmail(email string) (database.User, error) {
 }
 
 func GetEndDateForUser(id int) (database.Date, error) {
-	lastDateOffline, err := offline.IsAccountActivatedOffline(id)
+	lastDateOffline, err := offline.GetLastEndDate(id)
 	if err != nil {
 		return database.Date{}, fmt.Errorf("error catching offline payment")
 	}

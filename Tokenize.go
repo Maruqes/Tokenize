@@ -487,7 +487,6 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 
 	//admin
 	http.HandleFunc("/pay-offline", offline.ActivateAccountOfflineRequest)
-	http.HandleFunc("/is-offline", offline.GetLastEndDate)
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)

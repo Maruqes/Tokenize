@@ -2,7 +2,6 @@ package offline
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -70,70 +69,32 @@ func ActivateAccountOfflineRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func IsAccountActivatedOffline(id int) (database.OfflinePayment, error) {
-	offlinePayments, err := database.GetOfflinePaymentByID(id)
+func GetLastEndDate(id int) (database.OfflinePayment, error) {
+	all_offline, err := database.GetOfflinePaymentByID(id)
 	if err != nil {
-		fmt.Println(err)
 		return database.OfflinePayment{}, err
 	}
 
-	var lastPayment database.OfflinePayment
-	for _, payment := range offlinePayments {
-		endDateUnix := time.Date(payment.End_date.Year, time.Month(payment.End_date.Month), payment.End_date.Day, 0, 0, 0, 0, time.UTC).Unix()
-		if endDateUnix > time.Now().Unix() {
-			lastPayment = payment
+	if len(all_offline) == 0 {
+		return database.OfflinePayment{}, nil
+	}
+
+	var last_offline database.OfflinePayment
+	last_offline = all_offline[0]
+
+	for _, off := range all_offline {
+		if off.DateOfPayment.Year > last_offline.DateOfPayment.Year {
+			last_offline = off
+		} else if off.DateOfPayment.Year == last_offline.DateOfPayment.Year {
+			if off.DateOfPayment.Month > last_offline.DateOfPayment.Month {
+				last_offline = off
+			} else if off.DateOfPayment.Month == last_offline.DateOfPayment.Month {
+				if off.DateOfPayment.Day > last_offline.DateOfPayment.Day {
+					last_offline = off
+				}
+			}
 		}
 	}
 
-	return lastPayment, nil
-}
-
-func GetLastEndDate(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
-
-	if funchooks.IsOffline_UserFunc != nil {
-		if funchooks.IsOffline_UserFunc(w, r) {
-			return
-		}
-	}
-
-	var credentials struct {
-		Email  string `json:"email"`
-		Secret string `json:"secret"`
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&credentials)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if credentials.Email == "" || credentials.Secret == "" {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	user, err := database.GetUserByEmail(credentials.Email)
-	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	secret_env := os.Getenv("SECRET_ADMIN")
-
-	if credentials.Secret != secret_env {
-		http.Error(w, "Invalid secret", http.StatusUnauthorized)
-		return
-	}
-
-	lastPayment, err := IsAccountActivatedOffline(user.ID)
-	if err != nil {
-		http.Error(w, "Failed to get last payment", http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(lastPayment.End_date)
+	return last_offline, nil
 }

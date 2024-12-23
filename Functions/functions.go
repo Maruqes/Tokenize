@@ -146,7 +146,7 @@ func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
 		return true, nil
 	}
 
-	if off, err := offline.IsAccountActivatedOffline(usr.ID); time.Now().Unix() < time.Date(off.End_date.Year, time.Month(off.End_date.Month), off.End_date.Day, 0, 0, 0, 0, time.UTC).Unix() || err != nil {
+	if off, err := offline.GetLastEndDate(usr.ID); time.Now().Unix() < time.Date(off.End_date.Year, time.Month(off.End_date.Month), off.End_date.Day, 0, 0, 0, 0, time.UTC).Unix() || err != nil {
 		return true, nil
 	}
 
