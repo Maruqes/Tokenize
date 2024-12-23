@@ -83,13 +83,13 @@ func GetLastEndDate(id int) (database.OfflinePayment, error) {
 	last_offline = all_offline[0]
 
 	for _, off := range all_offline {
-		if off.DateOfPayment.Year > last_offline.DateOfPayment.Year {
+		if off.End_date.Year > last_offline.End_date.Year {
 			last_offline = off
-		} else if off.DateOfPayment.Year == last_offline.DateOfPayment.Year {
-			if off.DateOfPayment.Month > last_offline.DateOfPayment.Month {
+		} else if off.End_date.Year == last_offline.End_date.Year {
+			if off.End_date.Month > last_offline.End_date.Month {
 				last_offline = off
-			} else if off.DateOfPayment.Month == last_offline.DateOfPayment.Month {
-				if off.DateOfPayment.Day > last_offline.DateOfPayment.Day {
+			} else if off.End_date.Month == last_offline.End_date.Month {
+				if off.End_date.Day > last_offline.End_date.Day {
 					last_offline = off
 				}
 			}

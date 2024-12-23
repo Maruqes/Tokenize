@@ -12,6 +12,14 @@ type Date struct {
 	Year  int
 }
 
+type DateInterface interface {
+	String(date string) (Date, error)
+}
+
+func (d Date) String() string {
+	return fmt.Sprintf("%02d/%02d/%04d", d.Day, d.Month, d.Year)
+}
+
 func StringToDate(date string) (Date, error) {
 	var dateObj Date
 	_, err := fmt.Sscanf(date, "%d/%d/%d", &dateObj.Day, &dateObj.Month, &dateObj.Year)

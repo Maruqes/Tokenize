@@ -263,34 +263,6 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func testLogin(w http.ResponseWriter, r *http.Request) {
-	login_Q := Login.CheckToken(r)
-	if !login_Q {
-		http.Error(w, "Not logged in", http.StatusUnauthorized)
-		return
-	}
-
-	id, err := r.Cookie("id")
-	if err != nil {
-		http.Error(w, "Error getting id", http.StatusInternalServerError)
-		return
-	}
-
-	idInt, err := strconv.Atoi(id.Value)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
-	}
-
-	usr, err := database.GetUser(idInt)
-	if err != nil {
-		http.Error(w, "Error getting user", http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte("Logged in as " + usr.Name))
-}
-
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
 
 	if funchooks.LogoutUser_UserFunc != nil {

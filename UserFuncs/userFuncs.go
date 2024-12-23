@@ -30,11 +30,10 @@ func GetEndDateForUser(id int) (database.Date, error) {
 
 	lastStripePayment, err := functions.GetEndDateUserStripe(id)
 	if err != nil {
-		return database.Date{}, fmt.Errorf("error catching stripe payment")
+		if err.Error() != "no end date available" {
+			return database.Date{}, fmt.Errorf("error catching stripe payment")
+		}
 	}
-
-	fmt.Printf("lastDateOffline: %v\n", lastDateOffline)
-	fmt.Printf("lastStripePayment: %v\n", lastStripePayment)
 
 	if lastDateOffline.End_date.Year > lastStripePayment.Year {
 		return lastDateOffline.End_date, nil
