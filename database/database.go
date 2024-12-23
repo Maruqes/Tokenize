@@ -13,12 +13,12 @@ import (
 var db *sql.DB
 
 type User struct {
-	ID       int
-	StripeID string
-	Email    string
-	Name     string
-  isProhibited bool
-	IsActive bool
+	ID           int
+	StripeID     string
+	Email        string
+	Name         string
+	IsProhibited bool
+	IsActive     bool
 }
 
 func CreateTable() {
@@ -59,34 +59,33 @@ func Init() {
 }
 
 func ProhibitUser(id int) error {
-  _, err := db.Exec(`
+	_, err := db.Exec(`
     UPDATE users
     SET is_prohibited = 1
     WHERE id = ?
   `, id)
-  return err
+	return err
 }
 
 func UnprohibitUser(id int) error {
-  _, err := db.Exec(`
+	_, err := db.Exec(`
     UPDATE users
     SET is_prohibited = 0
     WHERE id = ?
   `, id)
-  return err
+	return err
 }
 
 func CheckIfUserIsProhibited(id int) (bool, error) {
-  row := db.QueryRow(`
+	row := db.QueryRow(`
     SELECT is_prohibited
     FROM users
     WHERE id = ?
   `, id)
-  var isProhibited bool
-  err := row.Scan(&isProhibited)
-  return isProhibited, err
+	var isProhibited bool
+	err := row.Scan(&isProhibited)
+	return isProhibited, err
 }
-
 
 func CheckIfCanUserBeAdded(email, name string) (bool, error) {
 	row := db.QueryRow(`
@@ -164,7 +163,7 @@ func GetUser(id int) (User, error) {
 		WHERE id = ?
 	`, id)
 	var user User
-	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.isProhibited, &user.IsActive)
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsProhibited, &user.IsActive)
 	return user, err
 }
 
@@ -175,7 +174,7 @@ func GetUserByEmail(email string) (User, error) {
 		WHERE email = ?
 	`, email)
 	var user User
-	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.isProhibited, &user.IsActive)
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsProhibited, &user.IsActive)
 	return user, err
 }
 
@@ -192,7 +191,7 @@ func GetAllUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		err := rows.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.isProhibited, &user.IsActive)
+		err := rows.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsProhibited, &user.IsActive)
 		if err != nil {
 			return nil, err
 		}
