@@ -226,10 +226,5 @@ func GetAllSubscriptions(userID int) ([]Subscription, error) {
 		return nil, fmt.Errorf("error fetching subscriptions: %v", err)
 	}
 
-	for _, s := range res {
-		fmt.Println(s)
-		fmt.Println("\n\n")
-	}
-
 	return res, nil
 }
