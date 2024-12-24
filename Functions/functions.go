@@ -221,6 +221,10 @@ func GetEndDateUserStripe(userId int) (database.Date, error) {
 		return database.Date{}, err
 	}
 
+	if user.StripeID == "" {
+		return database.Date{}, fmt.Errorf("no end date available or no stripe id")
+	}
+
 	params := &stripe.SubscriptionListParams{
 		Customer: stripe.String(user.StripeID),
 		Status:   stripe.String("all"), // Include all statuses to catch trials
@@ -247,11 +251,12 @@ func GetEndDateUserStripe(userId int) (database.Date, error) {
 	}
 
 	if lastEnd == 0 {
-		return database.Date{}, fmt.Errorf("no end date available")
+		return database.Date{}, fmt.Errorf("no end date available or no stripe id")
 	}
 
 	return database.DateFromUnix(lastEnd), nil
 }
+
 
 func GetMourosStartingDate() (time.Time, error) {
 	mourosStatingDateEnv := os.Getenv("MOUROS_STARTING_DATE")

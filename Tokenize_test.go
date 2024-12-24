@@ -9,6 +9,7 @@ import (
 )
 
 func TestThis(t *testing.T) {
+	Initialize()
 	InitListen("4242", "/success.html", "/cancel.html", types.TypeOfSubscriptionValues.MourosSubscription, []types.ExtraPayments{types.ExtraPaymentsValues.Multibanco})
 }
 

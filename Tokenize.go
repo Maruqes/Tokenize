@@ -393,6 +393,8 @@ func Initialize() {
 
 	Logs.InitLogs()
 
+	stripe.Key = os.Getenv("SECRET_KEY")
+
 	initialized = true
 }
 
@@ -418,8 +420,6 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 
 	types.GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
 	types.GLOBAL_EXTRA_PAYMENTS = extraPayments
-
-	stripe.Key = os.Getenv("SECRET_KEY")
 
 	normalSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
 	startOnDayXNoSub.InitOnDayXNoSubCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)

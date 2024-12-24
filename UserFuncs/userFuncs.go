@@ -34,7 +34,7 @@ func GetEndDateForUser(id int) (database.Date, error) {
 
 	lastStripePayment, err := functions.GetEndDateUserStripe(id)
 	if err != nil {
-		if err.Error() != "no end date available" {
+		if err.Error() != "no end date available or no stripe id" {
 			return database.Date{}, fmt.Errorf("error catching stripe payment")
 		}
 	}
