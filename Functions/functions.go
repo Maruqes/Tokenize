@@ -53,7 +53,7 @@ func CheckAllEnv() {
 	IsValidDate(os.Getenv("MOUROS_STARTING_DATE"))
 	IsValidDate(os.Getenv("MOUROS_ENDING_DATE"))
 
-	_, err := getMourosStartingDate()
+	_, err := GetMourosStartingDate()
 	if err != nil {
 		if err.Error() != "Mouros starting date not set" {
 			log.Fatalf("Error parsing mouros starting date: %v", err)
@@ -253,7 +253,7 @@ func GetEndDateUserStripe(userId int) (database.Date, error) {
 	return database.DateFromUnix(lastEnd), nil
 }
 
-func getMourosStartingDate() (time.Time, error) {
+func GetMourosStartingDate() (time.Time, error) {
 	mourosStatingDateEnv := os.Getenv("MOUROS_STARTING_DATE")
 	if mourosStatingDateEnv == "" {
 		return time.Time{}, fmt.Errorf("Mouros starting date not found")
