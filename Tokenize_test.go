@@ -9,7 +9,7 @@ import (
 )
 
 func TestThis(t *testing.T) {
-	Init("4242", "/success.html", "/cancel.html", types.TypeOfSubscriptionValues.MourosSubscription, []types.ExtraPayments{types.ExtraPaymentsValues.Multibanco})
+	InitListen("4242", "/success.html", "/cancel.html", types.TypeOfSubscriptionValues.MourosSubscription, []types.ExtraPayments{types.ExtraPaymentsValues.Multibanco})
 }
 
 func TestPermission7(t *testing.T) {

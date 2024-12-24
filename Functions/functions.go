@@ -52,9 +52,19 @@ func CheckAllEnv() {
 	IsValidDate(os.Getenv("STARTING_DATE"))
 	IsValidDate(os.Getenv("MOUROS_STARTING_DATE"))
 	IsValidDate(os.Getenv("MOUROS_ENDING_DATE"))
+
+	_, err := getMourosStartingDate()
+	if err != nil {
+		if err.Error() != "Mouros starting date not set" {
+			log.Fatalf("Error parsing mouros starting date: %v", err)
+		}
+	}
 }
 
 func IsValidDate(dates string) {
+	if dates == "0/0" {
+		return
+	}
 	day := strings.Split(dates, "/")[0]
 	month := strings.Split(dates, "/")[1]
 
@@ -241,4 +251,26 @@ func GetEndDateUserStripe(userId int) (database.Date, error) {
 	}
 
 	return database.DateFromUnix(lastEnd), nil
+}
+
+func getMourosStartingDate() (time.Time, error) {
+	mourosStatingDateEnv := os.Getenv("MOUROS_STARTING_DATE")
+	if mourosStatingDateEnv == "" {
+		return time.Time{}, fmt.Errorf("Mouros starting date not found")
+	}
+
+	if mourosStatingDateEnv == "0/0" {
+		return time.Time{}, fmt.Errorf("Mouros starting date not set")
+	}
+
+	mourosStatingDate, err := time.Parse("1/1", mourosStatingDateEnv)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("Error parsing mouros starting date")
+	}
+
+	// Set the year to the current year
+	currentYear := time.Now().Year()
+	mourosStatingDate = mourosStatingDate.AddDate(currentYear-mourosStatingDate.Year(), 0, 0)
+
+	return mourosStatingDate, nil
 }

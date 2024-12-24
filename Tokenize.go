@@ -380,8 +380,27 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"active": true}`))
 }
 
+var initialized bool = false
+
+func Initialize() {
+	functions.CheckAllEnv()
+	fmt.Println("Init")
+
+	database.Init()
+	database.CreateTable()
+	database.CreatePermissionsTable()
+	database.CreateOfflineTable()
+
+	Logs.InitLogs()
+
+	initialized = true
+}
+
 // set port like "4242"
-func Init(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
+func InitListen(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
+	if !initialized {
+		Initialize()
+	}
 	fmt.Println(functions.GetStringForSubscription() + "\n")
 	success_path = success
 	cancel_path = cancel
@@ -397,15 +416,6 @@ func Init(port string, success string, cancel string, typeOfSubscription types.T
 		log.Fatal("Invalid port")
 	}
 
-	functions.CheckAllEnv()
-	fmt.Println("Init")
-
-	database.Init()
-	database.CreateTable()
-	database.CreatePermissionsTable()
-	database.CreateOfflineTable()
-
-	Logs.InitLogs()
 	types.GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
 	types.GLOBAL_EXTRA_PAYMENTS = extraPayments
 
