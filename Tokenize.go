@@ -19,6 +19,7 @@ import (
 	normalSub "github.com/Maruqes/Tokenize/NormalSub"
 	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
 	types "github.com/Maruqes/Tokenize/Types"
+	"github.com/Maruqes/Tokenize/UserFuncs"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/Maruqes/Tokenize/offline"
 
@@ -396,6 +397,16 @@ func Initialize() {
 	stripe.Key = os.Getenv("SECRET_KEY")
 
 	initialized = true
+
+	subs, err := UserFuncs.GetAllSubscriptions(4)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, sub := range subs {
+		fmt.Println(sub)
+	}
+
+	fmt.Println("Len subs: ", len(subs))
 }
 
 // set port like "4242"
@@ -403,6 +414,7 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 	if !initialized {
 		Initialize()
 	}
+
 	fmt.Println(functions.GetStringForSubscription() + "\n")
 	success_path = success
 	cancel_path = cancel
@@ -424,8 +436,6 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 	normalSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
 	startOnDayXNoSub.InitOnDayXNoSubCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
 	mourosSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
-
-	// http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
 
 	if typeOfSubscription == types.TypeOfSubscriptionValues.Normal {
 		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
@@ -473,9 +483,13 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
 
+	if os.Getenv("DEV") == "True" {
+		http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+	}
+
 	addr := "0.0.0.0:" + port
 	log.Printf("Listening on %s", addr)
 
-	// Start HTTPS server
+	// Start HTTP server
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

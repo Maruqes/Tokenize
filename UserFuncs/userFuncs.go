@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	functions "github.com/Maruqes/Tokenize/Functions"
@@ -39,29 +40,7 @@ func GetEndDateForUser(id int) (database.Date, error) {
 		}
 	}
 
-	if lastDateOffline.End_date.Year > lastStripePayment.Year {
-		return lastDateOffline.End_date, nil
-	} else if lastDateOffline.End_date.Year < lastStripePayment.Year {
-		return lastStripePayment, nil
-	}
-
-	if lastDateOffline.End_date.Month > lastStripePayment.Month {
-		return lastDateOffline.End_date, nil
-	} else if lastDateOffline.End_date.Month < lastStripePayment.Month {
-		return lastStripePayment, nil
-	}
-
-	if lastDateOffline.End_date.Day > lastStripePayment.Day {
-		return lastDateOffline.End_date, nil
-	} else if lastDateOffline.End_date.Day < lastStripePayment.Day {
-		return lastStripePayment, nil
-	}
-
-	if lastDateOffline.End_date.Day == lastStripePayment.Day {
-		return lastDateOffline.End_date, nil
-	}
-
-	return database.Date{}, fmt.Errorf("error catching end date")
+	return functions.GetLatestDate(lastDateOffline.End_date, lastStripePayment), nil
 }
 
 func ProhibitUser(id int) error {
@@ -116,23 +95,21 @@ func DeactivateUser(id int) error {
 
 // subscription funs
 type Subscription struct {
-	ID        string        `json:"id"`
-	UserID    int           `json:"user_id"`
-	StartDate database.Date `json:"start_date"`
-	EndDate   database.Date `json:"end_date"`
-	Active    bool          `json:"active"`
-	Trial     bool          `json:"trial"`
-	Used      bool          `json:"used"`
-	Schedule  bool          `json:"schedule"`
-}
-
-type SubscriptionInterface interface {
-	Print() string
+	ID         string        `json:"id"`
+	ScheduleID string        `json:"ScheduleID"`
+	UserID     int           `json:"user_id"`
+	StartDate  database.Date `json:"start_date"`
+	EndDate    database.Date `json:"end_date"`
+	Active     bool          `json:"active"`
+	Trial      bool          `json:"trial"`
+	Used       bool          `json:"used"`
+	Schedule   bool          `json:"schedule"`
 }
 
 func (s Subscription) String() string {
-	return fmt.Sprintf("ID: %s\nUserID: %d\nStartDate: %s\nEndDate: %s\nActive: %t\nTrial: %t\nUsed: %t\nSchedule: %t\n",
+	return fmt.Sprintf("ID: %s\nSheduleID: %s\nUserID: %d\nStartDate: %s\nEndDate: %s\nActive: %t\nTrial: %t\nUsed: %t\nSchedule: %t\n",
 		s.ID,
+		s.ScheduleID,
 		s.UserID,
 		s.StartDate.String(),
 		s.EndDate.String(),
@@ -142,28 +119,8 @@ func (s Subscription) String() string {
 		s.Schedule)
 }
 
-func isSubscriptionInResult(sub *stripe.Subscription, res []Subscription) bool {
-	if sub == nil {
-		return false
-	}
-
-	for _, s := range res {
-		if s.ID == sub.ID {
-			return true
-		}
-	}
-
-	return false
-}
-
-func GetAllSubscriptions(userID int) ([]Subscription, error) {
-	var res []Subscription
-
-	user, err := database.GetUser(userID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting user")
-	}
-
+func getNormalSubs(user database.User, wg *sync.WaitGroup, res *[]Subscription) {
+	defer wg.Done()
 	// Fetch active subscriptions
 	params := &stripe.SubscriptionListParams{
 		Customer: stripe.String(user.StripeID),
@@ -180,20 +137,24 @@ func GetAllSubscriptions(userID int) ([]Subscription, error) {
 		used := currentDate.After(startDate) && currentDate.Before(endDate.Add(24*time.Hour))
 
 		subsS := Subscription{
-			ID:        s.ID,
-			UserID:    userID,
-			StartDate: database.DateFromUnix(s.CurrentPeriodStart),
-			EndDate:   database.DateFromUnix(s.CurrentPeriodEnd),
-			Active:    s.Status == "active",
-			Trial:     s.Status == "trialing",
-			Used:      used,
-			Schedule:  false,
+			ID:         s.ID,
+			ScheduleID: "",
+			UserID:     user.ID,
+			StartDate:  database.DateFromUnix(s.CurrentPeriodStart),
+			EndDate:    database.DateFromUnix(s.CurrentPeriodEnd),
+			Active:     s.Status == "active",
+			Trial:      s.Status == "trialing",
+			Used:       used,
+			Schedule:   false,
 		}
 
-		res = append(res, subsS)
+		*res = append(*res, subsS)
 	}
+}
 
-	// Fetch scheduled subscriptions
+func getScheduledSubs(user database.User, wg *sync.WaitGroup, res *[]Subscription) {
+	defer wg.Done()
+	// Fetch active subscriptions
 	scheduleParams := &stripe.SubscriptionScheduleListParams{
 		Customer: stripe.String(user.StripeID),
 	}
@@ -204,27 +165,43 @@ func GetAllSubscriptions(userID int) ([]Subscription, error) {
 
 		for _, phase := range schedule.Phases {
 
-			if isSubscriptionInResult(schedule.Subscription, res) {
-				continue
+			subsS := Subscription{
+				ID:         "",
+				ScheduleID: schedule.ID,
+				UserID:     user.ID,
+				StartDate:  database.DateFromUnix(phase.StartDate),
+				EndDate:    database.DateFromUnix(phase.EndDate),
+				Active:     schedule.Status == "active",
+				Trial:      schedule.Status == "trialing",
+				Used:       false,
+				Schedule:   true,
 			}
 
-			subsS := Subscription{
-				ID:        schedule.ID,
-				UserID:    userID,
-				StartDate: database.DateFromUnix(phase.StartDate),
-				EndDate:   database.DateFromUnix(phase.EndDate),
-				Active:    schedule.Status == "active",
-				Trial:     schedule.Status == "trialing",
-				Used:      false,
-				Schedule:  true,
+			// Verifica se o ID da subscrição não é nulo ou vazio
+			if schedule.Subscription != nil && schedule.Subscription.ID != "" {
+				subsS.ID = schedule.Subscription.ID
 			}
-			res = append(res, subsS)
+
+			*res = append(*res, subsS)
 		}
 	}
+}
 
-	if err := i.Err(); err != nil {
-		return nil, fmt.Errorf("error fetching subscriptions: %v", err)
+func GetAllSubscriptions(userID int) ([]Subscription, error) {
+	var wg sync.WaitGroup
+	var res []Subscription
+
+	user, err := database.GetUser(userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user")
 	}
+
+	wg.Add(2)
+
+	go getNormalSubs(user, &wg, &res)
+	go getScheduledSubs(user, &wg, &res)
+
+	wg.Wait()
 
 	return res, nil
 }

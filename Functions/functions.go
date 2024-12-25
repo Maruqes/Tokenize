@@ -19,6 +19,28 @@ import (
 	"github.com/stripe/stripe-go/v81/subscription"
 )
 
+func GetLatestDate(d1 database.Date, d2 database.Date) database.Date {
+	if d1.Year > d2.Year {
+		return d1
+	} else if d1.Year < d2.Year {
+		return d2
+	}
+
+	if d1.Month > d2.Month {
+		return d1
+	} else if d1.Month < d2.Month {
+		return d2
+	}
+
+	if d1.Day > d2.Day {
+		return d1
+	} else if d1.Day < d2.Day {
+		return d2
+	}
+
+	return d1
+}
+
 func GenerateUUID() string {
 	uuid := uuid.New() // Generate a new UUIDv4
 	return uuid.String()
@@ -256,7 +278,6 @@ func GetEndDateUserStripe(userId int) (database.Date, error) {
 
 	return database.DateFromUnix(lastEnd), nil
 }
-
 
 func GetMourosStartingDate() (time.Time, error) {
 	mourosStatingDateEnv := os.Getenv("MOUROS_STARTING_DATE")
