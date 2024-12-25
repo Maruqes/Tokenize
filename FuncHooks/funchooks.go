@@ -11,7 +11,6 @@ var LogoutUser_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var LoginUser_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var Multibanco_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var PayOffline_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
-var IsOffline_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 
 func SetCreateUser_UserFunc(f func(w http.ResponseWriter, r *http.Request) bool) {
 	CreateUser_UserFunc = f
@@ -43,8 +42,4 @@ func SetMultibanco_UserFunc(f func(w http.ResponseWriter, r *http.Request) bool)
 // For offline payment
 func SetPayOffline_UserFunc(f func(w http.ResponseWriter, r *http.Request) bool) {
 	PayOffline_UserFunc = f
-}
-
-func SetIsOffline_UserFunc(f func(w http.ResponseWriter, r *http.Request) bool) {
-	IsOffline_UserFunc = f
 }

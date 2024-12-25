@@ -264,8 +264,8 @@ func GetEndDateUserStripe(userId int) (database.Date, error) {
 		if s.TrialEnd > subEnd {
 			subEnd = s.TrialEnd
 		}
-		if s.CancelAt > 0 && s.CancelAt < subEnd {
-			subEnd = s.CancelAt // Use the earlier cancellation date if it exists
+		if s.CancelAt > 0 {
+			continue //if canceled, don't consider
 		}
 		if subEnd > lastEnd {
 			lastEnd = subEnd

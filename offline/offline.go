@@ -17,12 +17,6 @@ func ActivateAccountOfflineRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if funchooks.PayOffline_UserFunc != nil {
-		if funchooks.PayOffline_UserFunc(w, r) {
-			return
-		}
-	}
-
 	var credentials struct {
 		Email   string `json:"email"`
 		Secret  string `json:"secret"`
@@ -55,9 +49,16 @@ func ActivateAccountOfflineRequest(w http.ResponseWriter, r *http.Request) {
 
 	secret_env := os.Getenv("SECRET_ADMIN")
 
+	//verify secret
 	if credentials.Secret != secret_env {
 		http.Error(w, "Invalid secret", http.StatusUnauthorized)
 		return
+	}
+
+	if funchooks.PayOffline_UserFunc != nil {
+		if funchooks.PayOffline_UserFunc(w, r) {
+			return
+		}
 	}
 
 	todaysDate := database.DateFromUnix(time.Now().Unix())

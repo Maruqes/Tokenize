@@ -90,16 +90,16 @@ func CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if funchooks.Checkout_UserFunc != nil {
-		if funchooks.Checkout_UserFunc(w, r) {
-			return
-		}
-	}
-
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
+	}
+
+	if funchooks.Checkout_UserFunc != nil {
+		if funchooks.Checkout_UserFunc(w, r) {
+			return
+		}
 	}
 
 	// Check if user is prohibited and respond accordingly

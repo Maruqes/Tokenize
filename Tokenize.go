@@ -38,16 +38,16 @@ var cancel_path = ""
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
 
-	if funchooks.CreatePortalSession_UserFunc != nil {
-		if funchooks.CreatePortalSession_UserFunc(w, r) {
-			return
-		}
-	}
-
 	login := Login.CheckToken(r)
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
+	}
+
+	if funchooks.CreatePortalSession_UserFunc != nil {
+		if funchooks.CreatePortalSession_UserFunc(w, r) {
+			return
+		}
 	}
 
 	//get id

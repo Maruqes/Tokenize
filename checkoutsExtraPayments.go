@@ -42,12 +42,6 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if funchooks.Multibanco_UserFunc != nil {
-		if funchooks.Multibanco_UserFunc(w, r) {
-			return
-		}
-	}
-
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, "Error parsing form data", http.StatusBadRequest)
@@ -67,6 +61,12 @@ func multibancoSubscription(w http.ResponseWriter, r *http.Request) {
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
+	}
+
+	if funchooks.Multibanco_UserFunc != nil {
+		if funchooks.Multibanco_UserFunc(w, r) {
+			return
+		}
 	}
 
 	// Check if user is prohibited and respond accordingly
