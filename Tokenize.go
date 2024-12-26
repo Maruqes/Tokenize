@@ -112,6 +112,14 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest) // Return a 400 error on a bad signature
 		return
 	}
+
+	if funchooks.StripeWebhook_UserFunc != nil {
+		eventCopy := event
+		if funchooks.StripeWebhook_UserFunc(eventCopy) {
+			return
+		}
+	}
+
 	// Unmarshal the event data into an appropriate struct depending on its Type
 	switch event.Type {
 	case "customer.subscription.deleted":
