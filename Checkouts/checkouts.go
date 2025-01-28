@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Maruqes/Tokenize/UserFuncs"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
@@ -118,6 +119,21 @@ func ValidateUserInfoToActivate(customer_id string) (database.User, error) {
 	}
 	if usr.IsActive {
 		return database.User{}, fmt.Errorf("user is already active")
+	}
+
+	//active by offline payment
+	endDate, err := UserFuncs.GetEndDateForUser(customerIDInt)
+	if err != nil {
+		return database.User{}, fmt.Errorf("error getting end date")
+	}
+	if endDate.Year > time.Now().Year() {
+		return database.User{}, fmt.Errorf("user has active offline payment")
+	}
+	if endDate.Year == time.Now().Year() && endDate.Month > int(time.Now().Month()) {
+		return database.User{}, fmt.Errorf("user has active offline payment")
+	}
+	if endDate.Year == time.Now().Year() && endDate.Month == int(time.Now().Month()) && endDate.Day >= time.Now().Day() {
+		return database.User{}, fmt.Errorf("user has active offline payment")
 	}
 
 	return usr, nil

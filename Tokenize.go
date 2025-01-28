@@ -116,6 +116,7 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	if funchooks.StripeWebhook_UserFunc != nil {
 		eventCopy := event
 		if funchooks.StripeWebhook_UserFunc(eventCopy) {
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 	}
