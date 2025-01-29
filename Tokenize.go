@@ -19,7 +19,6 @@ import (
 	normalSub "github.com/Maruqes/Tokenize/NormalSub"
 	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
 	types "github.com/Maruqes/Tokenize/Types"
-	"github.com/Maruqes/Tokenize/UserFuncs"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/Maruqes/Tokenize/offline"
 
@@ -406,16 +405,6 @@ func Initialize() {
 	stripe.Key = os.Getenv("SECRET_KEY")
 
 	initialized = true
-
-	subs, err := UserFuncs.GetAllSubscriptions(4)
-	if err != nil {
-		fmt.Println(err)
-	}
-	for _, sub := range subs {
-		fmt.Println(sub)
-	}
-
-	fmt.Println("Len subs: ", len(subs))
 }
 
 // set port like "4242"
