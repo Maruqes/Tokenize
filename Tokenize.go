@@ -1,6 +1,7 @@
 package Tokenize
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -391,11 +392,11 @@ func isActiveID(w http.ResponseWriter, r *http.Request) {
 
 var initialized bool = false
 
-func Initialize() {
+func Initialize() *sql.DB {
 	functions.CheckAllEnv()
 	fmt.Println("Init")
 
-	database.Init()
+	db := database.Init()
 	database.CreateTable()
 	database.CreatePermissionsTable()
 	database.CreateOfflineTable()
@@ -405,6 +406,7 @@ func Initialize() {
 	stripe.Key = os.Getenv("SECRET_KEY")
 
 	initialized = true
+	return db
 }
 
 // set port like "4242"

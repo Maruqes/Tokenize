@@ -39,7 +39,7 @@ func CreateTable() {
 	}
 }
 
-func Init() {
+func Init() *sql.DB {
 	var err error
 	// Check if the database file exists
 	if _, err := os.Stat("./users.db"); os.IsNotExist(err) {
@@ -56,6 +56,7 @@ func Init() {
 		log.Fatal(err)
 	}
 	CreateTable()
+	return db
 }
 
 func ProhibitUser(id int) error {
