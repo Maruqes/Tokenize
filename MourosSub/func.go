@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
@@ -23,6 +24,12 @@ func hadAnySubscription(userID int) (bool, error) {
 
 	if usr.StripeID == "" {
 		return false, nil
+	}
+
+	if funchooks.CheckHadAnySubscription_UserFunc != nil {
+		if funchooks.CheckHadAnySubscription_UserFunc(usr.ID) {
+			return true, nil
+		}
 	}
 
 	params := &stripe.SubscriptionListParams{
