@@ -7,6 +7,7 @@ import (
 
 	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
+	"github.com/Maruqes/Tokenize/offline"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/subscription"
 )
@@ -23,6 +24,10 @@ func hadAnySubscription(userID int) (bool, error) {
 
 	if usr.StripeID == "" {
 		return false, nil
+	}
+
+	if offline.HasUserHadAnyOfflinePayments(userID) {
+		return true, nil
 	}
 
 	params := &stripe.SubscriptionListParams{

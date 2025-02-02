@@ -100,15 +100,15 @@ func GetLastEndDate(id int) (database.OfflinePayment, error) {
 	return last_offline, nil
 }
 
-func HasUserHadAnyOfflinePayments(id int) (bool, error) {
+func HasUserHadAnyOfflinePayments(id int) (bool) {
 	date, err := GetLastEndDate(id)
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	if date == (database.OfflinePayment{}) {
-		return false, nil
+		return false
 	}
 	
-	return true, nil
+	return true
 }
