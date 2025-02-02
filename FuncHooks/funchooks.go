@@ -16,11 +16,6 @@ var LoginUser_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var Multibanco_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var PayOffline_UserFunc func(w http.ResponseWriter, r *http.Request) bool = nil
 var StripeWebhook_UserFunc func(event stripe.Event) bool = nil
-var CheckHadAnySubscription_UserFunc func(usrid int) bool = nil
-
-func SetCheckHadAnySubscription_UserFunc(f func(usrid int) bool) {
-	CheckHadAnySubscription_UserFunc = f
-}
 
 func SetCreateUser_UserFunc(f func(w http.ResponseWriter, r *http.Request) bool) {
 	CreateUser_UserFunc = f
