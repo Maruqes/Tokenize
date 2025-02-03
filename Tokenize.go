@@ -11,14 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	checkouts "github.com/Maruqes/Tokenize/Checkouts"
-	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
-	mourosSub "github.com/Maruqes/Tokenize/MourosSub"
-	normalSub "github.com/Maruqes/Tokenize/NormalSub"
-	startOnDayXNoSub "github.com/Maruqes/Tokenize/StartOnDayXNoSub"
 	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/Maruqes/Tokenize/offline"
@@ -33,8 +28,6 @@ import (
 //falta joia (codigo desconto)
 
 var domain = os.Getenv("DOMAIN")
-var success_path = ""
-var cancel_path = ""
 
 func createPortalSession(w http.ResponseWriter, r *http.Request) {
 
@@ -42,12 +35,6 @@ func createPortalSession(w http.ResponseWriter, r *http.Request) {
 	if !login {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
 		return
-	}
-
-	if funchooks.CreatePortalSession_UserFunc != nil {
-		if funchooks.CreatePortalSession_UserFunc(w, r) {
-			return
-		}
 	}
 
 	//get id
@@ -113,14 +100,6 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if funchooks.StripeWebhook_UserFunc != nil {
-		eventCopy := event
-		if funchooks.StripeWebhook_UserFunc(eventCopy) {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-	}
-
 	// Unmarshal the event data into an appropriate struct depending on its Type
 	switch event.Type {
 	case "customer.subscription.deleted":
@@ -146,12 +125,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
-	}
-
-	if funchooks.CreateUser_UserFunc != nil {
-		if funchooks.CreateUser_UserFunc(w, r) {
-			return
-		}
 	}
 
 	login := Login.CheckToken(r)
@@ -187,12 +160,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//nao pode criar uma conta cujo email ja esta na stripe
-	if checkouts.CheckIfEmailIsBeingUsedInStripe(credentials.Email) {
-		http.Error(w, "Email already in use", http.StatusBadRequest)
-		return
-	}
-
 	//enviar email de confirmacao
 	id, err := database.AddUser("", credentials.Email, credentials.Username, credentials.Password)
 	if err != nil {
@@ -210,12 +177,6 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
-	}
-
-	if funchooks.LoginUser_UserFunc != nil {
-		if funchooks.LoginUser_UserFunc(w, r) {
-			return
-		}
 	}
 
 	var credentials struct {
@@ -274,12 +235,6 @@ func loginUsr(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutUsr(w http.ResponseWriter, r *http.Request) {
-
-	if funchooks.LogoutUser_UserFunc != nil {
-		if funchooks.LogoutUser_UserFunc(w, r) {
-			return
-		}
-	}
 
 	login_Q := Login.CheckToken(r)
 	if !login_Q {
@@ -352,44 +307,6 @@ func getPrecoSub(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func isActive(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if val, err := Login.IsUserActiveRequest(r); !val || err != nil {
-		w.Write([]byte(`{"active": false}`))
-		return
-	}
-	w.Write([]byte(`{"active": true}`))
-}
-
-func isActiveID(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if !Login.CheckToken(r) {
-		w.Write([]byte(`You are not logged in`))
-		return
-	}
-
-	if val, err := Login.IsUserActiveRequest(r); !val || err != nil {
-		w.Write([]byte(`Your user is not active`))
-		return
-	}
-
-	var requestData struct {
-		ID int `json:"id"`
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&requestData)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if val, err := Login.IsUserActive(requestData.ID); !val || err != nil {
-		w.Write([]byte(`{"active": false}`))
-		return
-	}
-	w.Write([]byte(`{"active": true}`))
-}
-
 var initialized bool = false
 
 func Initialize() *sql.DB {
@@ -415,10 +332,6 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 		Initialize()
 	}
 
-	fmt.Println(functions.GetStringForSubscription() + "\n")
-	success_path = success
-	cancel_path = cancel
-
 	if success[0] != '/' || cancel[0] != '/' {
 		panic("Success/Cancel path must start with /")
 	}
@@ -430,43 +343,6 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 		log.Fatal("Invalid port")
 	}
 
-	types.GLOBAL_TYPE_OF_SUBSCRIPTION = typeOfSubscription
-	types.GLOBAL_EXTRA_PAYMENTS = extraPayments
-
-	normalSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
-	startOnDayXNoSub.InitOnDayXNoSubCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
-	mourosSub.InitNormalCheckouts(domain, success_path, cancel_path, types.GLOBAL_TYPE_OF_SUBSCRIPTION)
-
-	if typeOfSubscription == types.TypeOfSubscriptionValues.Normal {
-		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
-
-	} else if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayX {
-		http.HandleFunc("/create-checkout-session", normalSub.CreateCheckoutSession) //subscricao
-
-	} else if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
-		http.HandleFunc("/create-checkout-session", startOnDayXNoSub.PaymentToCreateSubscriptionXDay) //subscricao
-
-	} else if typeOfSubscription == types.TypeOfSubscriptionValues.MourosSubscription {
-		http.HandleFunc("/create-checkout-session", mourosSub.MourosSubscription) //subscricao
-
-	} else {
-		log.Fatal("Invalid type of subscription")
-	}
-
-	for i := 0; i < len(extraPayments); i++ {
-		if extraPayments[i] == types.ExtraPaymentsValues.MBWay {
-			// http.HandleFunc("/mbway", mbwaySubscription)
-		} else if extraPayments[i] == types.ExtraPaymentsValues.Multibanco {
-			http.HandleFunc("/multibanco", multibancoSubscription)
-		} else {
-			log.Fatal("Invalid extra payment")
-		}
-	}
-
-	if typeOfSubscription == types.TypeOfSubscriptionValues.OnlyStartOnDayX && len(extraPayments) > 0 {
-		panic("Extra payments are not supported with this type of subscription")
-	}
-
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
 
@@ -474,8 +350,6 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 	http.HandleFunc("/create-user", createUser)
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
-	http.HandleFunc("/isActive", isActive)
-	http.HandleFunc("/isActiveID", isActiveID)
 
 	//admin
 	http.HandleFunc("/pay-offline", offline.ActivateAccountOfflineRequest)

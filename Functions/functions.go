@@ -9,13 +9,9 @@ import (
 	"strings"
 	"time"
 
-	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
-	"github.com/Maruqes/Tokenize/offline"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/customer"
-	"github.com/stripe/stripe-go/v81/paymentintent"
 	"github.com/stripe/stripe-go/v81/subscription"
 )
 
@@ -166,75 +162,6 @@ func CheckMourosDate() bool {
 	}
 
 	return false
-}
-
-func DoesUserHaveActiveSubscription(tokenizeID int) (bool, error) {
-	usr, err := database.GetUser(tokenizeID)
-	if err != nil {
-		return false, err
-	}
-
-	if usr.IsActive {
-		return true, nil
-	}
-
-	if off, err := offline.GetLastEndDate(usr.ID); time.Now().Unix() < time.Date(off.End_date.Year, time.Month(off.End_date.Month), off.End_date.Day, 0, 0, 0, 0, time.UTC).Unix() || err != nil {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func GetStringForSubscription() string {
-	if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.Normal {
-		return "Your subscription will start today"
-	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.OnlyStartOnDayX {
-		return "Your subscription will start today"
-	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.OnlyStartOnDayXNoSubscription {
-		month_day := os.Getenv("STARTING_DATE")
-		monthStr := strings.Split(month_day, "/")[1]
-		dayStr := strings.Split(month_day, "/")[0]
-
-		month, err := strconv.Atoi(monthStr)
-		if err != nil {
-			log.Fatal("Invalid month format")
-		}
-		day, err := strconv.Atoi(dayStr)
-		if err != nil {
-			log.Fatal("Invalid day format")
-		}
-
-		starting_date := time.Date(time.Now().Year(), time.Month(month), day, 0, 0, 0, 0, time.UTC)
-		if time.Now().After(starting_date) {
-			starting_date = time.Date(time.Now().Year()+1, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-		}
-		return "Your subscription will start on " + starting_date.Format("02/01/2006")
-	} else if types.GLOBAL_TYPE_OF_SUBSCRIPTION == types.TypeOfSubscriptionValues.MourosSubscription {
-		return "Your subscription will start today"
-	}
-	return ""
-}
-
-func DefinePaymentMethod(customerID string, paymentIntentID string) error {
-	paymentIntent, err := paymentintent.Get(paymentIntentID, nil)
-	if err != nil {
-		log.Printf("Erro ao obter o PaymentIntent: %v", err)
-		return err
-	}
-
-	lastPaymentMethodID := paymentIntent.PaymentMethod.ID
-
-	customerUpdateParams := &stripe.CustomerParams{
-		InvoiceSettings: &stripe.CustomerInvoiceSettingsParams{
-			DefaultPaymentMethod: stripe.String(lastPaymentMethodID),
-		},
-	}
-	_, err = customer.Update(customerID, customerUpdateParams)
-	if err != nil {
-		log.Printf("Erro ao definir o método de pagamento padrão: %v", err)
-		return err
-	}
-	return nil
 }
 
 func GetEndDateUserStripe(userId int) (database.Date, error) {

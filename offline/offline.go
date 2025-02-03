@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	funchooks "github.com/Maruqes/Tokenize/FuncHooks"
 	"github.com/Maruqes/Tokenize/database"
 )
 
@@ -54,13 +53,6 @@ func ActivateAccountOfflineRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid secret", http.StatusUnauthorized)
 		return
 	}
-
-	if funchooks.PayOffline_UserFunc != nil {
-		if funchooks.PayOffline_UserFunc(w, r) {
-			return
-		}
-	}
-
 	todaysDate := database.DateFromUnix(time.Now().Unix())
 
 	err = database.AddOfflinePayment(user.ID, todaysDate, date)
@@ -100,7 +92,7 @@ func GetLastEndDate(id int) (database.OfflinePayment, error) {
 	return last_offline, nil
 }
 
-func HasUserHadAnyOfflinePayments(id int) (bool) {
+func HasUserHadAnyOfflinePayments(id int) bool {
 	date, err := GetLastEndDate(id)
 	if err != nil {
 		return false
@@ -109,6 +101,6 @@ func HasUserHadAnyOfflinePayments(id int) (bool) {
 	if date == (database.OfflinePayment{}) {
 		return false
 	}
-	
+
 	return true
 }

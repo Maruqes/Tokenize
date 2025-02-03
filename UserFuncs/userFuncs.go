@@ -7,9 +7,7 @@ import (
 	"sync"
 	"time"
 
-	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/database"
-	"github.com/Maruqes/Tokenize/offline"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/subscription"
 	"github.com/stripe/stripe-go/v81/subscriptionschedule"
@@ -27,21 +25,6 @@ func GetUserByEmail(email string) (database.User, error) {
 	return database.GetUserByEmail(email)
 }
 
-func GetEndDateForUser(id int) (database.Date, error) {
-	lastDateOffline, err := offline.GetLastEndDate(id)
-	if err != nil {
-		return database.Date{}, fmt.Errorf("error catching offline payment")
-	}
-
-	lastStripePayment, err := functions.GetEndDateUserStripe(id)
-	if err != nil {
-		if err.Error() != "no end date available or no stripe id" {
-			return database.Date{}, fmt.Errorf("error catching stripe payment")
-		}
-	}
-
-	return functions.GetLatestDate(lastDateOffline.End_date, lastStripePayment), nil
-}
 
 func ProhibitUser(id int) error {
 	return database.ProhibitUser(id)

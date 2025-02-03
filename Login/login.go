@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"sync"
 
-	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/database"
 )
 
@@ -113,32 +112,4 @@ func CheckToken(r *http.Request) bool {
 		return false
 	}
 	return true
-}
-
-func IsUserActiveRequest(r *http.Request) (bool, error) {
-	cookie, err := r.Cookie("id")
-	if err != nil {
-		return false, fmt.Errorf("error getting id")
-	}
-	id, err := strconv.Atoi(cookie.Value)
-	if err != nil {
-		return false, fmt.Errorf("error converting id to int")
-	}
-	cookie, err = r.Cookie("token")
-	if err != nil {
-		return false, fmt.Errorf("error getting token")
-	}
-	token := cookie.Value
-
-	//check if token is valid
-	login, ok := loginStore.get(id)
-	if !ok || login.Token != token {
-		return false, fmt.Errorf("invalid token")
-	}
-
-	return functions.DoesUserHaveActiveSubscription(id)
-}
-
-func IsUserActive(id int) (bool, error) {
-	return functions.DoesUserHaveActiveSubscription(id)
 }

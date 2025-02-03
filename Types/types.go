@@ -5,15 +5,11 @@ type TypeOfSubscription string
 // these subscriptions are only available with card
 // Agrupa os valores do enum num struct
 var TypeOfSubscriptionValues = struct {
-	Normal                        TypeOfSubscription
-	OnlyStartOnDayX               TypeOfSubscription
-	OnlyStartOnDayXNoSubscription TypeOfSubscription
-	MourosSubscription            TypeOfSubscription
+	Normal             TypeOfSubscription
+	MourosSubscription TypeOfSubscription
 }{
-	Normal:                        "Normal",
-	OnlyStartOnDayX:               "OnlyStartOnDayX",
-	OnlyStartOnDayXNoSubscription: "OnlyStartOnDayXNoSubscription",
-	MourosSubscription:            "MourosSubscription",
+	Normal:             "Normal",
+	MourosSubscription: "MourosSubscription",
 }
 
 // a subscription you need to pay manually for now with mbway/multibanco both portuguese payment methods
