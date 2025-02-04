@@ -5,12 +5,51 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
+
+type Date struct {
+	Day   int
+	Month int
+	Year  int
+}
+
+type DateInterface interface {
+	String(date string) (Date, error)
+}
+
+func (d Date) String() string {
+	return fmt.Sprintf("%02d/%02d/%04d", d.Day, d.Month, d.Year)
+}
+func StringToDate(date string) (Date, error) {
+	var dateObj Date
+	_, err := fmt.Sscanf(date, "%d/%d/%d", &dateObj.Day, &dateObj.Month, &dateObj.Year)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if dateObj.Day < 1 || dateObj.Day > 31 {
+		return dateObj, fmt.Errorf("invalid day")
+	}
+	if dateObj.Month < 1 || dateObj.Month > 12 {
+		return dateObj, fmt.Errorf("invalid month")
+	}
+	if dateObj.Year < 1900 || dateObj.Year > 3000 {
+		return dateObj, fmt.Errorf("invalid year")
+	}
+
+	return dateObj, nil
+}
+
+func DateFromUnix(unix int64) Date {
+	t := time.Unix(unix, 0).UTC()
+	return Date{Day: t.Day(), Month: int(t.Month()), Year: t.Year()}
+}
 
 type User struct {
 	ID           int

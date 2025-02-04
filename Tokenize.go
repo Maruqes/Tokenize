@@ -14,9 +14,7 @@ import (
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
-	types "github.com/Maruqes/Tokenize/Types"
 	"github.com/Maruqes/Tokenize/database"
-	"github.com/Maruqes/Tokenize/offline"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v81"
@@ -316,7 +314,6 @@ func Initialize() *sql.DB {
 	db := database.Init()
 	database.CreateTable()
 	database.CreatePermissionsTable()
-	database.CreateOfflineTable()
 
 	Logs.InitLogs()
 
@@ -327,7 +324,7 @@ func Initialize() *sql.DB {
 }
 
 // set port like "4242"
-func InitListen(port string, success string, cancel string, typeOfSubscription types.TypeOfSubscription, extraPayments []types.ExtraPayments) {
+func InitListen(port string, success string, cancel string) {
 	if !initialized {
 		Initialize()
 	}
@@ -350,9 +347,6 @@ func InitListen(port string, success string, cancel string, typeOfSubscription t
 	http.HandleFunc("/create-user", createUser)
 	http.HandleFunc("/login-user", loginUsr)
 	http.HandleFunc("/logout-user", logoutUsr)
-
-	//admin
-	http.HandleFunc("/pay-offline", offline.ActivateAccountOfflineRequest)
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
