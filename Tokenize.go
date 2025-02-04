@@ -14,6 +14,7 @@ import (
 	functions "github.com/Maruqes/Tokenize/Functions"
 	"github.com/Maruqes/Tokenize/Login"
 	"github.com/Maruqes/Tokenize/Logs"
+	"github.com/Maruqes/Tokenize/StripeFunctions"
 	"github.com/Maruqes/Tokenize/database"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -101,17 +102,17 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	// Unmarshal the event data into an appropriate struct depending on its Type
 	switch event.Type {
 	case "customer.subscription.deleted":
-		custumer_subscription_deleted(w, event)
+		StripeFunctions.Custumer_subscription_deleted(w, event)
 	case "customer.subscription.created":
-		customer_subscription_created(w, event)
+		StripeFunctions.Customer_subscription_created(w, event)
 	case "customer.created":
-		customer_created(w, event)
+		StripeFunctions.Customer_created(w, event)
 	case "invoice.payment_succeeded":
-		invoice_payment_succeeded(w, event)
+		StripeFunctions.Invoice_payment_succeeded(w, event)
 	case "charge.succeeded":
-		charge_succeeded(w, event)
+		StripeFunctions.Charge_succeeded(w, event)
 	case "invoice.created":
-		invoice_created(w, event)
+		StripeFunctions.Invoice_created(w, event)
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 		Logs.LogMessage("Unhandled event type: " + string(event.Type))
@@ -323,6 +324,29 @@ func Initialize() *sql.DB {
 	return db
 }
 
+func testeEvent(e stripe.Event) {
+	fmt.Println("teste")
+	metadata, ok := e.Data.Object["metadata"].(map[string]interface{})
+	if ok {
+		val, ok := metadata["extra"]
+		if ok {
+			fmt.Println("METADA->:", val)
+		}
+	}
+}
+
+func test(w http.ResponseWriter, r *http.Request) {
+	payment, err := StripeFunctions.CreatePaymentPage(1, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"})
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed to create payment", http.StatusInternalServerError)
+		return
+	}
+
+	//redirect to payment page
+	http.Redirect(w, r, payment.URL, http.StatusSeeOther)
+}
+
 // set port like "4242"
 func InitListen(port string, success string, cancel string) {
 	if !initialized {
@@ -340,6 +364,8 @@ func InitListen(port string, success string, cancel string) {
 		log.Fatal("Invalid port")
 	}
 
+	StripeFunctions.PriceID = os.Getenv("SUBSCRIPTION_PRICE_ID")
+
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
 
@@ -351,8 +377,16 @@ func InitListen(port string, success string, cancel string) {
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
 
+	// db_user := database.User{1, "", "test0@test0.com", "testemail", false, false}
+	// val, err := StripeFunctions.HandleCreatingCustomer(db_user)
+	// if err != nil {
+	// 	val = val
+	// 	log.Fatal("Failed to create customer")
+	// }
+
 	if os.Getenv("DEV") == "True" {
 		http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
+		http.HandleFunc("/test", test)
 	}
 
 	addr := "0.0.0.0:" + port

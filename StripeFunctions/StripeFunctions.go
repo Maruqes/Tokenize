@@ -3,13 +3,14 @@ package StripeFunctions
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Maruqes/Tokenize/database"
-	"github.com/stripe/stripe-go/v81/paymentintent"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
+	"github.com/stripe/stripe-go/v81/paymentintent"
 	"github.com/stripe/stripe-go/v81/subscription"
 	"github.com/stripe/stripe-go/v81/subscriptionschedule"
 )
@@ -51,7 +52,14 @@ func GetCustomer(id string) (*stripe.Customer, error) {
 }
 
 // if custumer already exists in stripe it does not create a new one and uses the existing one
-func HandleCreatingCustomer(usr database.User, customer_id string) (*stripe.Customer, error) {
+func HandleCreatingCustomer(usr database.User) (*stripe.Customer, error) {
+
+	if usr.Email == "" {
+		fmt.Println("user email is empty")
+		return nil, fmt.Errorf("user email is empty")
+	}
+	customer_id := strconv.Itoa(usr.ID)
+
 	// Criar ou atualizar cliente
 	finalCustomer := &stripe.Customer{}
 	customerParams := &stripe.CustomerParams{
