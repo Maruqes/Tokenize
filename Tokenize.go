@@ -336,14 +336,33 @@ func testeEvent(e stripe.Event) {
 }
 
 func test(w http.ResponseWriter, r *http.Request) {
-	payment, err := StripeFunctions.CreatePaymentPage(1, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"})
+	PriceID := os.Getenv("SUBSCRIPTION_PRICE_ID")
+	PriceID = PriceID
+	// payment, err := StripeFunctions.CreatePaymentPage(1, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"})
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	http.Error(w, "Failed to create payment", http.StatusInternalServerError)
+	// 	return
+	// }
+
+	//redirect to payment page
+	// http.Redirect(w, r, payment.URL, http.StatusSeeOther)
+
+	// StripeFunctions.CreateSubscription(2, time.Hour*24*30, PriceID, testeEvent, map[string]string{"extra": "testeCreateSubscription"})
+
+	// StripeFunctions.CreateScheduledSubscription(2, time.Now().AddDate(0, 6, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "testeCreateScheduledSubscription"})
+
+	// StripeFunctions.CreateFreeTrial(2, time.Now().AddDate(0, 0, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "CreateFreeTrial"})
+
+	// StripeFunctions.CreatePayment(2, 49.99, testeEvent, map[string]string{"extra": "CreatePayment"})
+	// w.WriteHeader(http.StatusOK)
+
+	payment, err := StripeFunctions.CreateSubscriptionPage(2, PriceID, testeEvent, map[string]string{"extra": "testzaomeudeus"})
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Failed to create payment", http.StatusInternalServerError)
 		return
 	}
-
-	//redirect to payment page
 	http.Redirect(w, r, payment.URL, http.StatusSeeOther)
 }
 
@@ -364,7 +383,7 @@ func InitListen(port string, success string, cancel string) {
 		log.Fatal("Invalid port")
 	}
 
-	StripeFunctions.PriceID = os.Getenv("SUBSCRIPTION_PRICE_ID")
+	// PriceID := os.Getenv("SUBSCRIPTION_PRICE_ID")
 
 	http.HandleFunc("/create-portal-session", createPortalSession) //para checkar info da subscricao
 	http.HandleFunc("/webhook", handleWebhook)
@@ -376,13 +395,6 @@ func InitListen(port string, success string, cancel string) {
 
 	http.HandleFunc("/health", healthCheck)
 	http.HandleFunc("/getPrecoSub", getPrecoSub)
-
-	// db_user := database.User{1, "", "test0@test0.com", "testemail", false, false}
-	// val, err := StripeFunctions.HandleCreatingCustomer(db_user)
-	// if err != nil {
-	// 	val = val
-	// 	log.Fatal("Failed to create customer")
-	// }
 
 	if os.Getenv("DEV") == "True" {
 		http.Handle("/", http.FileServer(http.Dir("public"))) //for testing
