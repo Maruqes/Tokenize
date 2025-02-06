@@ -25,7 +25,6 @@ func CheckAllEnv() {
 		"SUBSCRIPTION_PRICE_ID",
 		"DOMAIN",
 		"LOGS_FILE",
-		"SECRET_ADMIN",
 	}
 
 	for _, envVar := range requiredEnvVars {

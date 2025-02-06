@@ -290,3 +290,14 @@ func CheckUserPassword(id int, password string) bool {
 	}
 	return VerifyPassword(password, hashedPassword)
 }
+
+func GetUserByStripeID(stripeID string) (User, error) {
+	row := db.QueryRow(`
+		SELECT id, stripe_id, email, name, is_prohibited, is_active
+		FROM users
+		WHERE stripe_id = ?
+	`, stripeID)
+	var user User
+	err := row.Scan(&user.ID, &user.StripeID, &user.Email, &user.Name, &user.IsProhibited, &user.IsActive)
+	return user, err
+}

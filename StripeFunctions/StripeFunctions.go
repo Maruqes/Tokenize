@@ -287,3 +287,11 @@ func DefinePaymentMethod(customerID string, paymentIntentID string) error {
 	}
 	return nil
 }
+
+func GetUserIdWithStripeID(stripeID string) (int, error) {
+	user, err := database.GetUserByStripeID(stripeID)
+	if err != nil {
+		return -1, err
+	}
+	return user.ID, nil
+}

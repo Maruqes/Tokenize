@@ -113,3 +113,17 @@ func CheckToken(r *http.Request) bool {
 	}
 	return true
 }
+
+func GetIdWithRequest(r *http.Request) (int, error) {
+	//get cookies id and token
+	cookie, err := r.Cookie("id")
+	if err != nil {
+		return -1, err
+	}
+	id, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return -1, err
+	}
+	
+	return id, nil
+}

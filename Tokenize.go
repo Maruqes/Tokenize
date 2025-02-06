@@ -102,21 +102,24 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 	// Unmarshal the event data into an appropriate struct depending on its Type
 	switch event.Type {
 	case "customer.subscription.deleted":
-		StripeFunctions.Custumer_subscription_deleted(w, event)
+		StripeFunctions.Custumer_subscription_deleted(w, req, event)
 	case "customer.subscription.created":
-		StripeFunctions.Customer_subscription_created(w, event)
+		StripeFunctions.Customer_subscription_created(w, req, event)
 	case "customer.created":
-		StripeFunctions.Customer_created(w, event)
+		StripeFunctions.Customer_created(w, req, event)
 	case "invoice.payment_succeeded":
-		StripeFunctions.Invoice_payment_succeeded(w, event)
+		StripeFunctions.Invoice_payment_succeeded(w, req, event)
 	case "charge.succeeded":
-		StripeFunctions.Charge_succeeded(w, event)
+		StripeFunctions.Charge_succeeded(w, req, event)
 	case "invoice.created":
-		StripeFunctions.Invoice_created(w, event)
+		StripeFunctions.Invoice_created(w, req, event)
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 		Logs.LogMessage("Unhandled event type: " + string(event.Type))
 	}
+
+	//call callback if it exists
+	StripeFunctions.CallCallBack(event)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -338,32 +341,31 @@ func testeEvent(e stripe.Event) {
 func test(w http.ResponseWriter, r *http.Request) {
 	PriceID := os.Getenv("SUBSCRIPTION_PRICE_ID")
 	PriceID = PriceID
-	// payment, err := StripeFunctions.CreatePaymentPage(1, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"})
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	http.Error(w, "Failed to create payment", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	//redirect to payment page
-	// http.Redirect(w, r, payment.URL, http.StatusSeeOther)
-
-	// StripeFunctions.CreateSubscription(2, time.Hour*24*30, PriceID, testeEvent, map[string]string{"extra": "testeCreateSubscription"})
-
-	// StripeFunctions.CreateScheduledSubscription(2, time.Now().AddDate(0, 6, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "testeCreateScheduledSubscription"})
-
-	// StripeFunctions.CreateFreeTrial(2, time.Now().AddDate(0, 0, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "CreateFreeTrial"})
-
-	// StripeFunctions.CreatePayment(2, 49.99, testeEvent, map[string]string{"extra": "CreatePayment"})
-	// w.WriteHeader(http.StatusOK)
-
-	payment, err := StripeFunctions.CreateSubscriptionPage(2, PriceID, testeEvent, map[string]string{"extra": "testzaomeudeus"})
+	payment, err := StripeFunctions.CreatePaymentPage(6, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"})
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Failed to create payment", http.StatusInternalServerError)
 		return
 	}
+
+	// redirect to payment page
 	http.Redirect(w, r, payment.URL, http.StatusSeeOther)
+
+	// StripeFunctions.CreateSubscription(1, time.Hour*24*30, PriceID, testeEvent, map[string]string{"extra": "testeCreateSubscription"})
+
+	// StripeFunctions.CreateScheduledSubscription(2, time.Now().AddDate(0, 6, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "testeCreateScheduledSubscription"})
+
+	// StripeFunctions.CreateFreeTrial(3, time.Now().AddDate(0, 0, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "CreateFreeTrial"})
+
+	// StripeFunctions.CreatePayment(4, 49.99, testeEvent, map[string]string{"extra": "CreatePayment"})
+
+	// payment, err := StripeFunctions.CreateSubscriptionPage(5, PriceID, testeEvent, map[string]string{"extra": "testzaomeudeus"})
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	http.Error(w, "Failed to create payment", http.StatusInternalServerError)
+	// 	return
+	// }
+	// http.Redirect(w, r, payment.URL, http.StatusSeeOther)
 }
 
 // set port like "4242"
