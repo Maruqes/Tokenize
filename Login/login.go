@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Maruqes/Tokenize/database"
 )
 
 type Login struct {
-	UserID int
-	Token  string
+	UserID  int
+	Token   string
+	Expires int64
 }
 
 type LoginStore struct {
@@ -23,7 +25,25 @@ type LoginStore struct {
 
 const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
+func checkForExpiredLogins() {
+	const expirationDays = 7
+	const checkInterval = time.Hour
+
+	for {
+		time.Sleep(checkInterval)
+		loginStore.Lock()
+		for id, login := range loginStore.logins {
+			loginTime := time.Unix(login.Expires, 0)
+			if loginTime.Add(time.Hour * 24 * expirationDays).Before(time.Now()) {
+				delete(loginStore.logins, id)
+			}
+		}
+		loginStore.Unlock()
+	}
+}
+
 func newLoginStore() *LoginStore {
+
 	return &LoginStore{
 		logins: make(map[int]Login),
 	}
@@ -34,6 +54,7 @@ var loginStore = newLoginStore()
 func (s *LoginStore) add(login Login) {
 	s.Lock()
 	defer s.Unlock()
+	login.Expires = time.Now().Unix()
 	s.logins[login.UserID] = login
 }
 
@@ -124,6 +145,10 @@ func GetIdWithRequest(r *http.Request) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	
+
 	return id, nil
+}
+
+func Init() {
+	go checkForExpiredLogins()
 }

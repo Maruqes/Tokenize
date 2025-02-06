@@ -30,7 +30,7 @@ func StringToDate(date string) (Date, error) {
 	var dateObj Date
 	_, err := fmt.Sscanf(date, "%d/%d/%d", &dateObj.Day, &dateObj.Month, &dateObj.Year)
 	if err != nil {
-		log.Fatal(err)
+		return Date{}, err
 	}
 
 	if dateObj.Day < 1 || dateObj.Day > 31 {
@@ -68,7 +68,7 @@ func CreateTable() {
         email TEXT NOT NULL UNIQUE,
         name TEXT NOT NULL, 
         password TEXT,
-    is_prohibited BOOLEAN DEFAULT 0,
+    	is_prohibited BOOLEAN DEFAULT 0,
 		is_active BOOLEAN DEFAULT 0
     );
     `

@@ -199,7 +199,8 @@ func CreatePayment(userID int, amount float64, callback func(event stripe.Event)
 	return pi, nil
 }
 
-func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Event), imageURL, description string, extraMetadata map[string]string) (*stripe.CheckoutSession, error) {
+func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Event), imageURL, description string,
+	extraMetadata map[string]string, success_url string, cancel_url string) (*stripe.CheckoutSession, error) {
 	usrDB, err := database.GetUser(userID)
 	if err != nil {
 		return nil, err
@@ -241,8 +242,8 @@ func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Ev
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String("https://localhost/success?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:  stripe.String("https://localhost/cancel"),
+		SuccessURL: stripe.String(success_url),
+		CancelURL:  stripe.String(cancel_url),
 		Metadata:   metadata,
 		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
 			Metadata: metadata,
@@ -256,7 +257,8 @@ func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Ev
 	return sess, nil
 }
 
-func CreateSubscriptionPage(userID int, priceID string, callback func(event stripe.Event), extraMetadata map[string]string) (*stripe.CheckoutSession, error) {
+func CreateSubscriptionPage(userID int, priceID string, callback func(event stripe.Event), extraMetadata map[string]string,
+	success_url string, cancel_url string) (*stripe.CheckoutSession, error) {
 	usrDB, err := database.GetUser(userID)
 	if err != nil {
 		return nil, err
@@ -288,8 +290,8 @@ func CreateSubscriptionPage(userID int, priceID string, callback func(event stri
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String("https://localhost/success?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:  stripe.String("https://localhost/cancel"),
+		SuccessURL: stripe.String(success_url),
+		CancelURL:  stripe.String(cancel_url),
 		Metadata:   metadata,
 		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
 			Metadata: metadata,

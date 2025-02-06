@@ -10,7 +10,6 @@ import (
 	"github.com/Maruqes/Tokenize/database"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
-	"github.com/stripe/stripe-go/v81/paymentintent"
 	"github.com/stripe/stripe-go/v81/subscription"
 	"github.com/stripe/stripe-go/v81/subscriptionschedule"
 )
@@ -264,28 +263,6 @@ func GetAllSubscriptions(userID int) ([]Subscription, error) {
 	wg.Wait()
 
 	return res, nil
-}
-
-func DefinePaymentMethod(customerID string, paymentIntentID string) error {
-	paymentIntent, err := paymentintent.Get(paymentIntentID, nil)
-	if err != nil {
-		log.Printf("Erro ao obter o PaymentIntent: %v", err)
-		return err
-	}
-
-	lastPaymentMethodID := paymentIntent.PaymentMethod.ID
-
-	customerUpdateParams := &stripe.CustomerParams{
-		InvoiceSettings: &stripe.CustomerInvoiceSettingsParams{
-			DefaultPaymentMethod: stripe.String(lastPaymentMethodID),
-		},
-	}
-	_, err = customer.Update(customerID, customerUpdateParams)
-	if err != nil {
-		log.Printf("Erro ao definir o método de pagamento padrão: %v", err)
-		return err
-	}
-	return nil
 }
 
 func GetUserIdWithStripeID(stripeID string) (int, error) {

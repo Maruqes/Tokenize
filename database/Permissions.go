@@ -28,7 +28,7 @@ func CreatePermissionsTable() error {
 	CREATE TABLE IF NOT EXISTS user_permissions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
-		permission_id TEXT NOT NULL,
+		permission_id INTEGER NOT NULL,
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		FOREIGN KEY(permission_id) REFERENCES permissions(id)
 	);`
@@ -44,7 +44,8 @@ func CreateNewPermission(name, permission string) error {
 	query := `INSERT INTO permissions (name, permission) VALUES (?, ?);`
 	_, err := db.Exec(query, name, permission)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return err
 	}
 	return nil
 }
@@ -53,7 +54,8 @@ func DeletePermissionWithID(id int) error {
 	query := `DELETE FROM permissions WHERE id = ?;`
 	_, err := db.Exec(query, id)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return err
 	}
 	return nil
 }
@@ -70,7 +72,8 @@ func AddUserPermission(userID int, permission_id int) error {
 	query := `INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?);`
 	_, err := db.Exec(query, userID, permission_id)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return err
 	}
 	return nil
 }
@@ -79,7 +82,8 @@ func RemoveUserPermission(userID int, permission_id int) error {
 	query := `DELETE FROM user_permissions WHERE user_id = ? AND permission_id = ?;`
 	_, err := db.Exec(query, userID, permission_id)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return err
 	}
 	return nil
 }
@@ -93,7 +97,8 @@ func GetUserPermissions(userID int) ([]Permission, error) {
 	`
 	rows, err := db.Query(query, userID)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -114,7 +119,8 @@ func GetPermissionWithID(id int) (Permission, error) {
 	var permission Permission
 	err := row.Scan(&permission.ID, &permission.Name, &permission.Permission)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return Permission{-1, "-1", "-1"}, err
 	}
 	return permission, nil
 }
@@ -159,7 +165,8 @@ func GetPermissions() ([]Permission, error) {
 	query := `SELECT id, name, permission FROM permissions;`
 	rows, err := db.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -182,7 +189,8 @@ func GetAllUsersPermissions() ([]Permission, error) {
 	`
 	rows, err := db.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
 	defer rows.Close()
 
