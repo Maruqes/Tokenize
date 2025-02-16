@@ -99,25 +99,6 @@ func handleWebhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Unmarshal the event data into an appropriate struct depending on its Type
-	switch event.Type {
-	case "customer.subscription.deleted":
-		StripeFunctions.Custumer_subscription_deleted(w, req, event)
-	case "customer.subscription.created":
-		StripeFunctions.Customer_subscription_created(w, req, event)
-	case "customer.created":
-		StripeFunctions.Customer_created(w, req, event)
-	case "invoice.payment_succeeded":
-		StripeFunctions.Invoice_payment_succeeded(w, req, event)
-	case "charge.succeeded":
-		StripeFunctions.Charge_succeeded(w, req, event)
-	case "invoice.created":
-		StripeFunctions.Invoice_created(w, req, event)
-	default:
-		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
-		Logs.LogMessage("Unhandled event type: " + string(event.Type))
-	}
-
 	//call callback if it exists
 	StripeFunctions.CallCallBack(event)
 	w.WriteHeader(http.StatusOK)
