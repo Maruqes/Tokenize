@@ -371,14 +371,11 @@ func test(w http.ResponseWriter, r *http.Request) {
 }
 
 // set port like "4242"
-func InitListen(port string, success string, cancel string) {
+func InitListen(port string) {
 	if !initialized {
 		Initialize()
 	}
 
-	if success[0] != '/' || cancel[0] != '/' {
-		panic("Success/Cancel path must start with /")
-	}
 	port_int, err := strconv.Atoi(port)
 	if err != nil {
 		log.Fatal("Invalid port")

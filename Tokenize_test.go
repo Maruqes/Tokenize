@@ -6,5 +6,5 @@ import (
 
 func TestThis(t *testing.T) {
 	Initialize()
-	InitListen("4242", "/success.html", "/cancel.html")
+	InitListen("4242")
 }
