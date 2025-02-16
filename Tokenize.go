@@ -328,29 +328,19 @@ func Initialize() *sql.DB {
 	return db
 }
 
-func testeEvent(e stripe.Event) {
-	fmt.Println("teste")
-	metadata, ok := e.Data.Object["metadata"].(map[string]interface{})
-	if ok {
-		val, ok := metadata["extra"]
-		if ok {
-			fmt.Println("METADA->:", val)
-		}
-	}
-}
 
 func test(w http.ResponseWriter, r *http.Request) {
 	PriceID := os.Getenv("SUBSCRIPTION_PRICE_ID")
 
-	StripeFunctions.CreateSubscription(1, time.Hour*24*30, PriceID, testeEvent, map[string]string{"extra": "testeCreateSubscription"})
+	// StripeFunctions.CreateSubscription(1, time.Hour*24*30, PriceID, testeEvent, map[string]string{"extra": "testeCreateSubscription"})
 
-	StripeFunctions.CreateScheduledSubscription(2, time.Now().AddDate(0, 6, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "testeCreateScheduledSubscription"})
+	// StripeFunctions.CreateScheduledSubscription(2, time.Now().AddDate(0, 6, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "testeCreateScheduledSubscription"})
 
-	StripeFunctions.CreateFreeTrial(3, time.Now().AddDate(0, 0, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "CreateFreeTrial"})
+	// StripeFunctions.CreateFreeTrial(3, time.Now().AddDate(0, 0, 0), time.Hour*24*30*6, PriceID, testeEvent, map[string]string{"extra": "CreateFreeTrial"})
 
-	StripeFunctions.CreatePayment(4, 49.99, testeEvent, map[string]string{"extra": "CreatePayment"})
+	// StripeFunctions.CreatePayment(4, 49.99, testeEvent, map[string]string{"extra": "CreatePayment"})
 
-	payment2, err := StripeFunctions.CreateSubscriptionPage(5, PriceID, testeEvent, map[string]string{"extra": "testzaomeudeus"},
+	payment2, err := StripeFunctions.CreateSubscriptionPage(1, PriceID, map[string]string{"extra": "testzaomeudeus"},
 		domain+"/success", domain+"/cancel")
 	if err != nil {
 		fmt.Println(err)
@@ -359,15 +349,15 @@ func test(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, payment2.URL, http.StatusSeeOther)
 
-	payment, err := StripeFunctions.CreatePaymentPage(6, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"},
-		domain+"/success", domain+"/cancel")
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed to create payment", http.StatusInternalServerError)
-		return
-	}
-	// redirect to payment page
-	http.Redirect(w, r, payment.URL, http.StatusSeeOther)
+	// payment, err := StripeFunctions.CreatePaymentPage(6, 49.99, testeEvent, "https://picsum.photos/200/300", "desc", map[string]string{"extra": "testzaomeudeus"},
+	// 	domain+"/success", domain+"/cancel")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	http.Error(w, "Failed to create payment", http.StatusInternalServerError)
+	// 	return
+	// }
+	// // redirect to payment page
+	// http.Redirect(w, r, payment.URL, http.StatusSeeOther)
 }
 
 // set port like "4242"

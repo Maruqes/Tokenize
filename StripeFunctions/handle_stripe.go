@@ -10,6 +10,37 @@ import (
 	"github.com/stripe/stripe-go/v81"
 )
 
+var CreateSubscriptionCallback func(event stripe.Event)
+func SetCreateSubscriptionCallback(callback func(event stripe.Event)) {
+	CreateSubscriptionCallback = callback
+}
+
+var CreateScheduledSubscriptionCallback func(event stripe.Event)
+func SetCreateScheduledSubscriptionCallback(callback func(event stripe.Event)) {
+	CreateScheduledSubscriptionCallback = callback
+}
+
+var CreateFreeTrialCallback func(event stripe.Event)
+func SetCreateFreeTrialCallback(callback func(event stripe.Event)) {
+	CreateFreeTrialCallback = callback
+}
+
+var CreatePaymentCallback func(event stripe.Event)
+func SetCreatePaymentCallback(callback func(event stripe.Event)) {
+	CreatePaymentCallback = callback
+}
+
+var CreatePaymentPageCallback func(event stripe.Event)
+func SetCreatePaymentPageCallback(callback func(event stripe.Event)) {
+	CreatePaymentPageCallback = callback
+}
+
+var CreateSubscriptionPageCallback func(event stripe.Event)
+func SetCreateSubscriptionPageCallback(callback func(event stripe.Event)) {
+	CreateSubscriptionPageCallback = callback
+}
+
+
 func CallCallBack(event stripe.Event) {
 	//get callback metadata from event
 	metadata, ok := event.Data.Object["metadata"].(map[string]interface{})
@@ -18,9 +49,18 @@ func CallCallBack(event stripe.Event) {
 		if ok {
 			if callbackStr, ok := callbackVal.(string); ok {
 				fmt.Println("callbackID:", callbackStr)
-				callback := getCallback(callbackStr)
-				if callback != nil {
-					callback(event)
+				if callbackStr == "CreateSubscription" {
+					CreateSubscriptionCallback(event)
+				} else if callbackStr == "CreateScheduledSubscription" {
+					CreateScheduledSubscriptionCallback(event)
+				} else if callbackStr == "CreateFreeTrial" {
+					CreateFreeTrialCallback(event)
+				} else if callbackStr == "CreatePayment" {
+					CreatePaymentCallback(event)
+				} else if callbackStr == "CreatePaymentPage" {
+					CreatePaymentPageCallback(event)
+				} else if callbackStr == "CreateSubscriptionPage" {
+					CreateSubscriptionPageCallback(event)
 				}
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/Maruqes/Tokenize/database"
-	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/checkout/session"
 	"github.com/stripe/stripe-go/v81/paymentintent"
@@ -13,21 +12,7 @@ import (
 	"github.com/stripe/stripe-go/v81/subscriptionschedule"
 )
 
-var callbackRegistry = make(map[string]func(event stripe.Event))
-
-func RegisterCallback(id string, cb func(event stripe.Event)) {
-	callbackRegistry[id] = cb
-}
-
-func getCallback(id string) func(event stripe.Event) {
-	return callbackRegistry[id]
-}
-
-func generateCallbackID() string {
-	return "cb_" + uuid.NewString()
-}
-
-func CreateSubscription(userID int, trial_duration time.Duration, PriceID string, callback func(event stripe.Event), extraMetadata map[string]string) (*stripe.Subscription, error) {
+func CreateSubscription(userID int, trial_duration time.Duration, PriceID string, extraMetadata map[string]string) (*stripe.Subscription, error) {
 	trialEnd := time.Now().Add(trial_duration).Unix()
 
 	usrDB, err := database.GetUser(userID)
@@ -40,12 +25,9 @@ func CreateSubscription(userID int, trial_duration time.Duration, PriceID string
 		return nil, err
 	}
 
-	callbackID := generateCallbackID()
-	RegisterCallback(callbackID, callback)
-
 	// Cria o mapa de metadata com o callbackID e junta os extraMetadata (se houver)
 	metadata := map[string]string{
-		"callback": callbackID,
+		"callback": "CreateSubscription",
 	}
 	for key, value := range extraMetadata {
 		metadata[key] = value
@@ -70,7 +52,7 @@ func CreateSubscription(userID int, trial_duration time.Duration, PriceID string
 }
 
 // callback only calls when the start time is reached
-func CreateScheduledSubscription(userID int, start time.Time, trial_duration time.Duration, PriceID string, callback func(event stripe.Event), extraMetadata map[string]string) (*stripe.SubscriptionSchedule, error) {
+func CreateScheduledSubscription(userID int, start time.Time, trial_duration time.Duration, PriceID string, extraMetadata map[string]string) (*stripe.SubscriptionSchedule, error) {
 	trialEnd := start.Add(trial_duration).Unix()
 
 	usrDB, err := database.GetUser(userID)
@@ -83,12 +65,9 @@ func CreateScheduledSubscription(userID int, start time.Time, trial_duration tim
 		return nil, err
 	}
 
-	callbackID := generateCallbackID()
-	RegisterCallback(callbackID, callback)
-
 	// Cria o mapa de metadata com o callbackID e junta os extraMetadata (se houver)
 	metadata := map[string]string{
-		"callback": callbackID,
+		"callback": "CreateScheduledSubscription",
 	}
 	for key, value := range extraMetadata {
 		metadata[key] = value
@@ -117,7 +96,7 @@ func CreateScheduledSubscription(userID int, start time.Time, trial_duration tim
 	return schedule, nil
 }
 
-func CreateFreeTrial(userID int, start time.Time, duration time.Duration, PriceID string, callback func(event stripe.Event), extraMetadata map[string]string) (*stripe.Subscription, error) {
+func CreateFreeTrial(userID int, start time.Time, duration time.Duration, PriceID string, extraMetadata map[string]string) (*stripe.Subscription, error) {
 	trialEnd := start.Add(duration).Unix()
 
 	usrDB, err := database.GetUser(userID)
@@ -130,12 +109,9 @@ func CreateFreeTrial(userID int, start time.Time, duration time.Duration, PriceI
 		return nil, err
 	}
 
-	callbackID := generateCallbackID()
-	RegisterCallback(callbackID, callback)
-
 	// Cria o mapa de metadata com o callbackID e junta os extraMetadata (se houver)
 	metadata := map[string]string{
-		"callback": callbackID,
+		"callback": "CreateFreeTrial",
 	}
 	for key, value := range extraMetadata {
 		metadata[key] = value
@@ -161,7 +137,7 @@ func CreateFreeTrial(userID int, start time.Time, duration time.Duration, PriceI
 	return sub, nil
 }
 
-func CreatePayment(userID int, amount float64, callback func(event stripe.Event), extraMetadata map[string]string) (*stripe.PaymentIntent, error) {
+func CreatePayment(userID int, amount float64, extraMetadata map[string]string) (*stripe.PaymentIntent, error) {
 	usrDB, err := database.GetUser(userID)
 	if err != nil {
 		return nil, err
@@ -174,12 +150,9 @@ func CreatePayment(userID int, amount float64, callback func(event stripe.Event)
 
 	amt := int64(amount * 100)
 
-	callbackID := generateCallbackID()
-	RegisterCallback(callbackID, callback)
-
 	// Cria o mapa de metadata com o callbackID e junta os extraMetadata (se houver)
 	metadata := map[string]string{
-		"callback": callbackID,
+		"callback": "CreatePayment",
 	}
 	for key, value := range extraMetadata {
 		metadata[key] = value
@@ -199,7 +172,7 @@ func CreatePayment(userID int, amount float64, callback func(event stripe.Event)
 	return pi, nil
 }
 
-func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Event), imageURL, description string,
+func CreatePaymentPage(userID int, amount float64, imageURL, description string,
 	extraMetadata map[string]string, success_url string, cancel_url string) (*stripe.CheckoutSession, error) {
 	usrDB, err := database.GetUser(userID)
 	if err != nil {
@@ -213,12 +186,9 @@ func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Ev
 
 	amt := int64(amount * 100)
 
-	callbackID := generateCallbackID()
-	RegisterCallback(callbackID, callback)
-
 	// Cria o mapa de metadata com o callbackID e junta os extraMetadata (se houver)
 	metadata := map[string]string{
-		"callback": callbackID,
+		"callback": "CreatePaymentPage",
 	}
 	for key, value := range extraMetadata {
 		metadata[key] = value
@@ -257,7 +227,7 @@ func CreatePaymentPage(userID int, amount float64, callback func(event stripe.Ev
 	return sess, nil
 }
 
-func CreateSubscriptionPage(userID int, priceID string, callback func(event stripe.Event), extraMetadata map[string]string,
+func CreateSubscriptionPage(userID int, priceID string, extraMetadata map[string]string,
 	success_url string, cancel_url string) (*stripe.CheckoutSession, error) {
 	usrDB, err := database.GetUser(userID)
 	if err != nil {
@@ -269,11 +239,8 @@ func CreateSubscriptionPage(userID int, priceID string, callback func(event stri
 		return nil, err
 	}
 
-	callbackID := generateCallbackID()
-	RegisterCallback(callbackID, callback)
-
 	metadata := map[string]string{
-		"callback": callbackID,
+		"callback": "CreateSubscriptionPage",
 	}
 	for key, value := range extraMetadata {
 		metadata[key] = value

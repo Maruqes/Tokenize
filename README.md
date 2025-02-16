@@ -77,12 +77,10 @@ These functions give you the flexibility to create additional logic, such as tri
        userID int,
        trial_duration time.Duration,
        PriceID string,
-       callback func(event stripe.Event),
        extraMetadata map[string]string,
    )
    ```
    - Creates a new subscription in Stripe, optionally including a trial period (`trial_duration`).
-   - `callback` is called after the subscription is created (you can use it to update the database, send notifications, etc.).
    - `extraMetadata` allows you to pass additional information to Stripe.
 
 2. **CreateScheduledSubscription**
@@ -92,12 +90,11 @@ These functions give you the flexibility to create additional logic, such as tri
        start time.Time,
        trial_duration time.Duration,
        PriceID string,
-       callback func(event stripe.Event),
        extraMetadata map[string]string,
    )
    ```
    - Similar to `CreateSubscription` but allows scheduling the subscription to begin on a specific date (`start`).
-   - `callback` and `extraMetadata` work in the same way.
+   - `extraMetadata` work in the same way.
 
 3. **CreateFreeTrial**
    ```go
@@ -106,7 +103,6 @@ These functions give you the flexibility to create additional logic, such as tri
        start time.Time,
        duration time.Duration,
        PriceID string,
-       callback func(event stripe.Event),
        extraMetadata map[string]string,
    ) (*stripe.Subscription, error)
    ```
@@ -120,12 +116,10 @@ These functions give you the flexibility to create additional logic, such as tri
    CreatePayment(
        userID int,
        amount float64,
-       callback func(event stripe.Event),
        extraMetadata map[string]string,
    )
    ```
    - Performs a one-time payment for the specified `amount`.
-   - `callback` is executed when the relevant Stripe event occurs (confirmation, etc.).
    - Use `extraMetadata` to send additional info to Stripe (order ID, customer data, etc.).
 
 2. **CreatePaymentPage**
@@ -133,7 +127,6 @@ These functions give you the flexibility to create additional logic, such as tri
    CreatePaymentPage(
        userID int,
        amount float64,
-       callback func(event stripe.Event),
        imageURL string,
        description string,
        extraMetadata map[string]string,
@@ -149,7 +142,6 @@ These functions give you the flexibility to create additional logic, such as tri
    CreateSubscriptionPage(
        userID int,
        priceID string,
-       callback func(event stripe.Event),
        extraMetadata map[string]string,
        success_url string,
        cancel_url string,
