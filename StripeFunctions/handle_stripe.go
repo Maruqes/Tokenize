@@ -11,35 +11,40 @@ import (
 )
 
 var CreateSubscriptionCallback func(event stripe.Event)
+
 func SetCreateSubscriptionCallback(callback func(event stripe.Event)) {
 	CreateSubscriptionCallback = callback
 }
 
 var CreateScheduledSubscriptionCallback func(event stripe.Event)
+
 func SetCreateScheduledSubscriptionCallback(callback func(event stripe.Event)) {
 	CreateScheduledSubscriptionCallback = callback
 }
 
 var CreateFreeTrialCallback func(event stripe.Event)
+
 func SetCreateFreeTrialCallback(callback func(event stripe.Event)) {
 	CreateFreeTrialCallback = callback
 }
 
 var CreatePaymentCallback func(event stripe.Event)
+
 func SetCreatePaymentCallback(callback func(event stripe.Event)) {
 	CreatePaymentCallback = callback
 }
 
 var CreatePaymentPageCallback func(event stripe.Event)
+
 func SetCreatePaymentPageCallback(callback func(event stripe.Event)) {
 	CreatePaymentPageCallback = callback
 }
 
 var CreateSubscriptionPageCallback func(event stripe.Event)
+
 func SetCreateSubscriptionPageCallback(callback func(event stripe.Event)) {
 	CreateSubscriptionPageCallback = callback
 }
-
 
 func CallCallBack(event stripe.Event) {
 	//get callback metadata from event
