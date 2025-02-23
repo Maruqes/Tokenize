@@ -7,49 +7,43 @@ import (
 )
 
 var CreateSubscriptionCallback func(event stripe.Event)
+var CreateScheduledSubscriptionCallback func(event stripe.Event)
+var CreateFreeTrialCallback func(event stripe.Event)
+var CreatePaymentCallback func(event stripe.Event)
+var CreatePaymentPageCallback func(event stripe.Event)
+var CreateSubscriptionPageCallback func(event stripe.Event)
+var OtherEventCallback func(event stripe.Event)
 
 func SetCreateSubscriptionCallback(callback func(event stripe.Event)) {
 	CreateSubscriptionCallback = callback
 }
 
-var CreateScheduledSubscriptionCallback func(event stripe.Event)
-
 func SetCreateScheduledSubscriptionCallback(callback func(event stripe.Event)) {
 	CreateScheduledSubscriptionCallback = callback
 }
-
-var CreateFreeTrialCallback func(event stripe.Event)
 
 func SetCreateFreeTrialCallback(callback func(event stripe.Event)) {
 	CreateFreeTrialCallback = callback
 }
 
-var CreatePaymentCallback func(event stripe.Event)
-
 func SetCreatePaymentCallback(callback func(event stripe.Event)) {
 	CreatePaymentCallback = callback
 }
-
-var CreatePaymentPageCallback func(event stripe.Event)
 
 func SetCreatePaymentPageCallback(callback func(event stripe.Event)) {
 	CreatePaymentPageCallback = callback
 }
 
-var CreateSubscriptionPageCallback func(event stripe.Event)
-
 func SetCreateSubscriptionPageCallback(callback func(event stripe.Event)) {
 	CreateSubscriptionPageCallback = callback
 }
-
-var OtherEventCallback func(event stripe.Event)
 
 func SetOtherEventCallback(callback func(event stripe.Event)) {
 	OtherEventCallback = callback
 }
 
 func CallCallBack(event stripe.Event) {
-	//get callback metadata from event
+	// get callback metadata from event
 	metadata, ok := event.Data.Object["metadata"].(map[string]interface{})
 	if ok {
 		callbackVal, ok := metadata["callback"]
@@ -57,28 +51,42 @@ func CallCallBack(event stripe.Event) {
 			if callbackStr, ok := callbackVal.(string); ok {
 				fmt.Println("callbackID:", callbackStr)
 				if callbackStr == "CreateSubscription" {
-					CreateSubscriptionCallback(event)
+					if CreateSubscriptionCallback != nil {
+						CreateSubscriptionCallback(event)
+					}
 					return
 				} else if callbackStr == "CreateScheduledSubscription" {
-					CreateScheduledSubscriptionCallback(event)
+					if CreateScheduledSubscriptionCallback != nil {
+						CreateScheduledSubscriptionCallback(event)
+					}
 					return
 				} else if callbackStr == "CreateFreeTrial" {
-					CreateFreeTrialCallback(event)
+					if CreateFreeTrialCallback != nil {
+						CreateFreeTrialCallback(event)
+					}
 					return
 				} else if callbackStr == "CreatePayment" {
-					CreatePaymentCallback(event)
+					if CreatePaymentCallback != nil {
+						CreatePaymentCallback(event)
+					}
 					return
 				} else if callbackStr == "CreatePaymentPage" {
-					CreatePaymentPageCallback(event)
+					if CreatePaymentPageCallback != nil {
+						CreatePaymentPageCallback(event)
+					}
 					return
 				} else if callbackStr == "CreateSubscriptionPage" {
-					CreateSubscriptionPageCallback(event)
+					if CreateSubscriptionPageCallback != nil {
+						CreateSubscriptionPageCallback(event)
+					}
 					return
 				}
 			}
 		}
 	}
-	OtherEventCallback(event)
+	if OtherEventCallback != nil {
+		OtherEventCallback(event)
+	}
 }
 
 // func Customer_created(w http.ResponseWriter, r *http.Request, event stripe.Event) {
