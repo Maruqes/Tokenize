@@ -58,22 +58,27 @@ func CallCallBack(event stripe.Event) {
 				fmt.Println("callbackID:", callbackStr)
 				if callbackStr == "CreateSubscription" {
 					CreateSubscriptionCallback(event)
+					return
 				} else if callbackStr == "CreateScheduledSubscription" {
 					CreateScheduledSubscriptionCallback(event)
+					return
 				} else if callbackStr == "CreateFreeTrial" {
 					CreateFreeTrialCallback(event)
+					return
 				} else if callbackStr == "CreatePayment" {
 					CreatePaymentCallback(event)
+					return
 				} else if callbackStr == "CreatePaymentPage" {
 					CreatePaymentPageCallback(event)
+					return
 				} else if callbackStr == "CreateSubscriptionPage" {
 					CreateSubscriptionPageCallback(event)
-				} else {
-					OtherEventCallback(event)
+					return
 				}
 			}
 		}
 	}
+	OtherEventCallback(event)
 }
 
 // func Customer_created(w http.ResponseWriter, r *http.Request, event stripe.Event) {
