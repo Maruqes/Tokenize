@@ -1,89 +1,16 @@
 package StripeFunctions
 
 import (
-	"fmt"
-
 	"github.com/stripe/stripe-go/v81"
 )
 
-var CreateSubscriptionCallback func(event stripe.Event)
-var CreateScheduledSubscriptionCallback func(event stripe.Event)
-var CreateFreeTrialCallback func(event stripe.Event)
-var CreatePaymentCallback func(event stripe.Event)
-var CreatePaymentPageCallback func(event stripe.Event)
-var CreateSubscriptionPageCallback func(event stripe.Event)
 var OtherEventCallback func(event stripe.Event)
-
-func SetCreateSubscriptionCallback(callback func(event stripe.Event)) {
-	CreateSubscriptionCallback = callback
-}
-
-func SetCreateScheduledSubscriptionCallback(callback func(event stripe.Event)) {
-	CreateScheduledSubscriptionCallback = callback
-}
-
-func SetCreateFreeTrialCallback(callback func(event stripe.Event)) {
-	CreateFreeTrialCallback = callback
-}
-
-func SetCreatePaymentCallback(callback func(event stripe.Event)) {
-	CreatePaymentCallback = callback
-}
-
-func SetCreatePaymentPageCallback(callback func(event stripe.Event)) {
-	CreatePaymentPageCallback = callback
-}
-
-func SetCreateSubscriptionPageCallback(callback func(event stripe.Event)) {
-	CreateSubscriptionPageCallback = callback
-}
 
 func SetOtherEventCallback(callback func(event stripe.Event)) {
 	OtherEventCallback = callback
 }
 
 func CallCallBack(event stripe.Event) {
-	// get callback metadata from event
-	metadata, ok := event.Data.Object["metadata"].(map[string]interface{})
-	if ok {
-		callbackVal, ok := metadata["callback"]
-		if ok {
-			if callbackStr, ok := callbackVal.(string); ok {
-				fmt.Println("callbackID:", callbackStr)
-				if callbackStr == "CreateSubscription" {
-					if CreateSubscriptionCallback != nil {
-						CreateSubscriptionCallback(event)
-					}
-					return
-				} else if callbackStr == "CreateScheduledSubscription" {
-					if CreateScheduledSubscriptionCallback != nil {
-						CreateScheduledSubscriptionCallback(event)
-					}
-					return
-				} else if callbackStr == "CreateFreeTrial" {
-					if CreateFreeTrialCallback != nil {
-						CreateFreeTrialCallback(event)
-					}
-					return
-				} else if callbackStr == "CreatePayment" {
-					if CreatePaymentCallback != nil {
-						CreatePaymentCallback(event)
-					}
-					return
-				} else if callbackStr == "CreatePaymentPage" {
-					if CreatePaymentPageCallback != nil {
-						CreatePaymentPageCallback(event)
-					}
-					return
-				} else if callbackStr == "CreateSubscriptionPage" {
-					if CreateSubscriptionPageCallback != nil {
-						CreateSubscriptionPageCallback(event)
-					}
-					return
-				}
-			}
-		}
-	}
 	if OtherEventCallback != nil {
 		OtherEventCallback(event)
 	}
